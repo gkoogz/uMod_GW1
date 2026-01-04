@@ -18,7 +18,7 @@ OBJS = \
 	obj
 OBJS_exe = \
   bin
-WX_DIR = D:\Programme\wxWidgets-2.9.2
+WX_DIR = C:\wxWidgets-2.9.0
 LIBDIRNAME = \
 	$(WX_DIR)\lib\$(COMPILER_PREFIX)$(DIR_SUFFIX_CPU)_$(LIBTYPE_SUFFIX)$(CFG)
 SETUPHDIR = \
