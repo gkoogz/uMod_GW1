@@ -328,11 +328,9 @@ IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
     pIDirect3D9_orig = Direct3DCreate9_fn(SDKVersion); //creating the original IDirect3D9 object
   }
   else return (NULL);
-  uMod_IDirect3D9 *pIDirect3D9;
-  if (pIDirect3D9_orig)
-  {
-    pIDirect3D9 = new uMod_IDirect3D9( pIDirect3D9_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
-  }
+  if (pIDirect3D9_orig == NULL) return (NULL);
+
+  uMod_IDirect3D9 *pIDirect3D9 = new uMod_IDirect3D9( pIDirect3D9_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
 
   // we detour again
   Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*) Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9,5);
