@@ -22,6 +22,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #include "uMod_Main.h"
 #include <wx/filename.h>
+#include <wx/xlocale.h>
 
 
 
@@ -64,6 +65,14 @@ BEGIN_EVENT_TABLE(uMod_Frame, wxFrame)
 END_EVENT_TABLE()
 
 IMPLEMENT_APP(MyApp)
+#endif
+
+#if defined(wxUSE_XLOCALE) && (wxUSE_XLOCALE == 0)
+wxXLocale& wxXLocale::GetCLocale()
+{
+  static wxXLocale locale;
+  return locale;
+}
 #endif
 
 MyApp::~MyApp(void)
