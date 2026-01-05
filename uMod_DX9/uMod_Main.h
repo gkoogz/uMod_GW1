@@ -33,6 +33,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #include <cstdlib>
 #include <cstdio>
+#include <cwchar>
 
 #include <d3d9.h>
 #include <d3dx9.h>

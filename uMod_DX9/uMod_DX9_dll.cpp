@@ -62,6 +62,36 @@ unsigned int          gl_ErrorState = 0u;
 FILE*                 gl_File = NULL;
 #endif
 
+#ifdef HOOK_INJECTION
+static bool NormalizePath(const wchar_t *input, wchar_t *output, size_t output_len)
+{
+  if (input == NULL || input[0] == 0)
+  {
+    if (output_len > 0) output[0] = 0;
+    return false;
+  }
+
+  wchar_t full[MAX_PATH];
+  DWORD full_len = GetFullPathNameW(input, MAX_PATH, full, NULL);
+  if (full_len == 0 || full_len >= MAX_PATH)
+  {
+    wcsncpy_s(output, output_len, input, _TRUNCATE);
+    return false;
+  }
+
+  wchar_t long_path[MAX_PATH];
+  DWORD long_len = GetLongPathNameW(full, long_path, MAX_PATH);
+  if (long_len == 0 || long_len >= MAX_PATH)
+  {
+    wcsncpy_s(output, output_len, full, _TRUNCATE);
+    return false;
+  }
+
+  wcsncpy_s(output, output_len, long_path, _TRUNCATE);
+  return true;
+}
+#endif
+
 
 #ifdef DIRECT_INJECTION
 void Nothing(void) {(void)NULL;}
@@ -371,6 +401,9 @@ bool HookThisProgram( wchar_t *ret)
   GetModuleFileNameW( GetModuleHandle( NULL ), Executable, MAX_PATH ); //ask for name and path of this executable
 
 #ifdef HOOK_INJECTION
+  wchar_t ExecutableNormalized[MAX_PATH];
+  wchar_t GameNormalized[MAX_PATH];
+  NormalizePath(Executable, ExecutableNormalized, MAX_PATH);
   //we use the gloabal hook
 
   FILE* file;
@@ -392,10 +425,16 @@ bool HookThisProgram( wchar_t *ret)
         if (Game[len]==L'\r' || Game[len]==L'\n') {Game[len]=0; break;} //removing the new line symbols
         len++;
       }
-      if ( _wcsicmp( Executable, Game ) == 0 ) //compare both strings
+      NormalizePath(Game, GameNormalized, MAX_PATH);
+      if ( _wcsicmp( ExecutableNormalized, GameNormalized ) == 0 ) //compare both strings
       {
-        for (int i=0; i<len; i++) ret[i] = Game[i];
-        ret[len] = 0;
+        int normalized_len = 0;
+        while (GameNormalized[normalized_len])
+        {
+          ret[normalized_len] = GameNormalized[normalized_len];
+          normalized_len++;
+        }
+        ret[normalized_len] = 0;
         fclose(file);
         return (true);
       }
