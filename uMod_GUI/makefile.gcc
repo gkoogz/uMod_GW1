@@ -26,7 +26,7 @@ MINIMAL_CXXFLAGS = $(__DEBUGINFO) $(__OPTIMIZEFLAG_2) $(__THREADSFLAG) \
 	$(GCCFLAGS) -DHAVE_W32API_H -D__WXMSW__ $(__WXUNIV_DEFINE_p) \
 	$(__DEBUG_DEFINE_p) $(__EXCEPTIONS_DEFINE_p) $(__RTTI_DEFINE_p) \
 	$(__THREAD_DEFINE_p) $(__UNICODE_DEFINE_p) $(__MSLU_DEFINE_p) \
-	$(__GFXCTX_DEFINE_p) -I$(SETUPHDIR) -I$(WX_DIR)\include -I$(WX_DIR)\include\wx-2.9 -W -Wall -Wextra -I. \
+	$(__GFXCTX_DEFINE_p) -I$(SETUPHDIR) -I$(WX_DIR)\include -I$(WX_DIR)\include\wx-$(WX_RELEASE_NODOT) -W -Wall -Wextra -I. \
 	$(__DLLFLAG_p) -DNOPCH $(__RTTIFLAG_5) \
 	$(__EXCEPTIONSFLAG_6) -Wno-ctor-dtor-privacy $(CPPFLAGS) $(CXXFLAGS)
 MINIMAL_OBJECTS =  \
