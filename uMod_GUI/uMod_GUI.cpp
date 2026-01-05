@@ -21,6 +21,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/filename.h>
 
 
 
@@ -778,9 +779,9 @@ int uMod_Frame::SetHookedGames( const wxArrayString &array)
   wchar_t *app_path = _wgetenv( L"APPDATA");
   name.Printf("%ls\\%ls", app_path, uMod_APP_DIR);
 
-  if (! wxDir::Exists(name))
+  if (!wxDir::Exists(name))
   {
-    wxDir::Make(name);
+    wxFileName::Mkdir(name, 0777, wxPATH_MKDIR_FULL);
   }
 
   name.Printf("%ls\\%ls\\%ls", app_path, uMod_APP_DIR, uMod_APP_DX9);
