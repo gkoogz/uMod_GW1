@@ -47,10 +47,11 @@ LFLAGS = /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\Program Files (x86)\Microsoft Dire
 
 obj = obj
 bin = bin
+obj_dir_marker = $(obj)\.dir
 
 objects = $(obj)\uMod_DX9_dll.$(obj_suff) \
 	$(obj)\uMod_IDirect3D9.$(obj_suff) \
-  $(obj)\uMod_IDirect3D9Ex.$(obj_suff) \
+	$(obj)\uMod_IDirect3D9Ex.$(obj_suff) \
   $(obj)\uMod_IDirect3DDevice9.$(obj_suff) \
   $(obj)\uMod_IDirect3DDevice9Ex.$(obj_suff) \
   $(obj)\uMod_TextureFunction.$(obj_suff) \
@@ -71,47 +72,52 @@ headers = uMod_Main.h \
  uMod_IDirect3DVolumeTexture9.h \
  uMod_IDirect3DCubeTexture9.h \
  uMod_ArrayHandler.h \
- uMod_TextureClient.h \
- uMod_TextureServer.h
+	uMod_TextureClient.h \
+	uMod_TextureServer.h
 
-$(bin)\d3d9.dll: $(objects)
+$(bin)\d3d9.dll: $(objects) $(obj_dir_marker)
 	$(CLINK) $(LFLAGS) $(objects) /OUT:$(bin)\$(dll)
 	copy $(bin)\$(dll) ..\uMod_GUI\bin\$(dll)
 
-$(obj)\uMod_DX9_dll.$(obj_suff): uMod_DX9_dll.cpp  $(headers)
+$(obj_dir_marker):
+	-if not exist $(obj) mkdir $(obj)
+	-if not exist $(bin) mkdir $(bin)
+	@echo. > $(obj_dir_marker)
+
+$(obj)\uMod_DX9_dll.$(obj_suff): uMod_DX9_dll.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_DX9_dll.cpp
   
-$(obj)\uMod_IDirect3D9.$(obj_suff): uMod_IDirect3D9.cpp $(headers)
+$(obj)\uMod_IDirect3D9.$(obj_suff): uMod_IDirect3D9.cpp $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3D9.cpp
   
-$(obj)\uMod_IDirect3D9Ex.$(obj_suff): uMod_IDirect3D9Ex.cpp $(headers)
+$(obj)\uMod_IDirect3D9Ex.$(obj_suff): uMod_IDirect3D9Ex.cpp $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3D9Ex.cpp
 	
-$(obj)\uMod_IDirect3DDevice9.$(obj_suff): uMod_IDirect3DDevice9.cpp  $(headers)
+$(obj)\uMod_IDirect3DDevice9.$(obj_suff): uMod_IDirect3DDevice9.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3DDevice9.cpp
   
-$(obj)\uMod_IDirect3DDevice9Ex.$(obj_suff): uMod_IDirect3DDevice9Ex.cpp  $(headers)
+$(obj)\uMod_IDirect3DDevice9Ex.$(obj_suff): uMod_IDirect3DDevice9Ex.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3DDevice9Ex.cpp
   
-$(obj)\uMod_TextureFunction.$(obj_suff): uMod_TextureFunction.cpp  $(headers)
+$(obj)\uMod_TextureFunction.$(obj_suff): uMod_TextureFunction.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_TextureFunction.cpp
   
-$(obj)\uMod_IDirect3DTexture9.$(obj_suff): uMod_IDirect3DTexture9.cpp  $(headers)
+$(obj)\uMod_IDirect3DTexture9.$(obj_suff): uMod_IDirect3DTexture9.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3DTexture9.cpp
   
-$(obj)\uMod_IDirect3DVolumeTexture9.$(obj_suff): uMod_IDirect3DVolumeTexture9.cpp  $(headers)
-  $(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3DVolumeTexture9.cpp
+$(obj)\uMod_IDirect3DVolumeTexture9.$(obj_suff): uMod_IDirect3DVolumeTexture9.cpp  $(headers) $(obj_dir_marker)
+	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3DVolumeTexture9.cpp
 	
-$(obj)\uMod_IDirect3DCubeTexture9.$(obj_suff): uMod_IDirect3DCubeTexture9.cpp  $(headers)
+$(obj)\uMod_IDirect3DCubeTexture9.$(obj_suff): uMod_IDirect3DCubeTexture9.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_IDirect3DCubeTexture9.cpp
 	
-$(obj)\uMod_ArrayHandler.$(obj_suff): uMod_ArrayHandler.cpp  $(headers)
+$(obj)\uMod_ArrayHandler.$(obj_suff): uMod_ArrayHandler.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_ArrayHandler.cpp
 	
-$(obj)\uMod_TextureClient.$(obj_suff): uMod_TextureClient.cpp  $(headers)
+$(obj)\uMod_TextureClient.$(obj_suff): uMod_TextureClient.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_TextureClient.cpp
 	
-$(obj)\uMod_TextureServer.$(obj_suff): uMod_TextureServer.cpp  $(headers)
+$(obj)\uMod_TextureServer.$(obj_suff): uMod_TextureServer.cpp  $(headers) $(obj_dir_marker)
 	$(CXX) $(CFLAGS) /c /Fo$@ uMod_TextureServer.cpp
 
 clean:
