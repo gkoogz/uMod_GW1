@@ -587,8 +587,8 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
     wxArrayString array;
     if (GetHookedGames( array)) array.Empty();
 
-    int num = array.GetCount();
-    for (int i=0; i<num; i++) if (array[i] == games[index])
+    int hooked_num = array.GetCount();
+    for (int i=0; i<hooked_num; i++) if (array[i] == games[index])
     {
       wxMessageBox(Language->Error_GameIsHooked, "ERROR", wxOK|wxICON_ERROR);
       return;
@@ -780,7 +780,7 @@ int uMod_Frame::SetHookedGames( const wxArrayString &array)
 
   if (! wxDir::Exists(name))
   {
-    wxDir::Make(name);
+    wxFileName::Mkdir(name, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
   }
 
   name.Printf("%ls\\%ls\\%ls", app_path, uMod_APP_DIR, uMod_APP_DX9);

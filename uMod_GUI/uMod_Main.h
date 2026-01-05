@@ -53,6 +53,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "wx\notebook.h"
 #include <wx/file.h>
 #include <wx/dir.h>
+#include <wx/filename.h>
 #include <wx/tokenzr.h>
 #include <wx/dynlib.h>
 //#include <wx/thread.h>
