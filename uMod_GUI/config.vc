@@ -23,7 +23,7 @@ CFLAGS =
 CXXFLAGS = 
 
 # Standard preprocessor flags (common for CC and CXX) 
-CPPFLAGS = 
+CPPFLAGS = /DUMOD_WX_XLOCALE_SHIM
 
 # Standard linker flags 
 LDFLAGS = 
@@ -146,4 +146,3 @@ CPPUNIT_LIBS =
 # static if SHARED=0, but it is highly recommended to not do
 # it if SHARED=1 unless you know what you are doing. [dynamic,static]
 RUNTIME_LIBS = static
-
