@@ -18,6 +18,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #include <wx/xlocale.h>
 
+#if defined(wxHAS_XLOCALE) && (wxHAS_XLOCALE == 0)
 wxXLocale& wxXLocale::GetCLocale()
 {
   static wxXLocale locale;
@@ -27,3 +28,4 @@ wxXLocale& wxXLocale::GetCLocale()
 void wxXLocale::Free()
 {
 }
+#endif
