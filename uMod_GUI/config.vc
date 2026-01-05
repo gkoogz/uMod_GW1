@@ -23,7 +23,7 @@ CFLAGS =
 CXXFLAGS = 
 
 # Standard preprocessor flags (common for CC and CXX) 
-CPPFLAGS = /DwxUSE_XLOCALE=0 /DwxHAS_XLOCALE=0
+CPPFLAGS =
 
 # Standard linker flags 
 LDFLAGS = 

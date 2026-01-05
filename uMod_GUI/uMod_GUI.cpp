@@ -67,7 +67,7 @@ END_EVENT_TABLE()
 IMPLEMENT_APP(MyApp)
 #endif
 
-#if defined(wxUSE_XLOCALE) && (wxUSE_XLOCALE == 0)
+#if defined(wxHAS_XLOCALE) && (wxHAS_XLOCALE == 0)
 wxXLocale& wxXLocale::GetCLocale()
 {
   static wxXLocale locale;
