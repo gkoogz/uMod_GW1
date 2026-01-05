@@ -23,3 +23,7 @@ wxXLocale& wxXLocale::GetCLocale()
   static wxXLocale locale;
   return locale;
 }
+
+void wxXLocale::Free()
+{
+}
