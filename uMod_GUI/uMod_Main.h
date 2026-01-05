@@ -49,8 +49,8 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #define WIN32_LEAN_AND_MEAN
 
 
-#include "wx\wx.h"
-#include "wx\notebook.h"
+#include "wx/wx.h"
+#include "wx/notebook.h"
 #include <wx/file.h>
 #include <wx/dir.h>
 #include <wx/filename.h>
