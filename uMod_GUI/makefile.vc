@@ -32,20 +32,20 @@ MINIMAL_CXXFLAGS = /M$(__RUNTIME_LIBS_10)$(__DEBUGRUNTIME_4) /DWIN32 \
 	$(____CAIRO_INCLUDEDIR_FILENAMES_p) /W4 /I. $(__DLLFLAG_p) /D_WINDOWS \
 	 /DNOPCH $(__RTTIFLAG_11) $(__EXCEPTIONSFLAG_12) \
 	$(CPPFLAGS) $(CXXFLAGS)
-MINIMAL_OBJECTS =  \
-  $(OBJS)\unzip.obj \
-  $(OBJS)\uMod_DirectInjection.obj \
-  $(OBJS)\uMod_GUI.obj \
-  $(OBJS)\uMod_GameInfo.obj \
-  $(OBJS)\uMod_GamePage.obj \
-  $(OBJS)\uMod_Server.obj \
-  $(OBJS)\uMod_Client.obj \
-  $(OBJS)\uMod_File.obj \
-  $(OBJS)\uMod_Sender.obj \
-  $(OBJS)\uMod_Settings.obj \
-  $(OBJS)\uMod_AddTexture.obj \
-  $(OBJS)\uMod_Language.obj \
-  $(OBJS)\uMod_XLocaleShim.obj
+MINIMAL_OBJECTS = \
+	$(OBJS)\unzip.obj \
+	$(OBJS)\uMod_DirectInjection.obj \
+	$(OBJS)\uMod_GUI.obj \
+	$(OBJS)\uMod_GameInfo.obj \
+	$(OBJS)\uMod_GamePage.obj \
+	$(OBJS)\uMod_Server.obj \
+	$(OBJS)\uMod_Client.obj \
+	$(OBJS)\uMod_File.obj \
+	$(OBJS)\uMod_Sender.obj \
+	$(OBJS)\uMod_Settings.obj \
+	$(OBJS)\uMod_AddTexture.obj \
+	$(OBJS)\uMod_Language.obj \
+	$(OBJS)\uMod_XLocaleShim.obj
 MINIMAL_RESOURCES =  \
 	$(OBJS)\uMod_GUI.res
 
@@ -400,3 +400,6 @@ $(OBJS)\uMod_AddTexture.obj: .\uMod_AddTexture.cpp
 
 $(OBJS)\uMod_Language.obj: .\uMod_Language.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_Language.cpp
+
+$(OBJS)\uMod_XLocaleShim.obj: .\uMod_XLocaleShim.cpp
+  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_XLocaleShim.cpp
