@@ -406,9 +406,13 @@ bool HookThisProgram( wchar_t *ret)
 #endif
 #ifdef DIRECT_INJECTION
   // we inject directly
-  int i=0;
-  while ( Game[i]) {ret[i]=Game[i]; i++;}
-  ret[i]=0;
+  int i = 0;
+  while (Executable[i])
+  {
+    ret[i] = Executable[i];
+    i++;
+  }
+  ret[i] = 0;
   return true;
 #endif
 }
