@@ -36,6 +36,7 @@ obj_suff = HI.obj
 dll = uMod_d3d9_HI.dll
 
 !ENDIF
+!ENDIF
 
 
 CXX = cl

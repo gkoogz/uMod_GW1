@@ -17,6 +17,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 */
 
 #include "uMod_Main.h"
+#include <wx/tooltip.h>
 
 
 uMod_GamePage::uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct &pipe)
@@ -522,4 +523,3 @@ int uMod_GamePage::UpdateLanguage(void)
   SavePath->SetValue( temp);
   return 0;
 }
-
