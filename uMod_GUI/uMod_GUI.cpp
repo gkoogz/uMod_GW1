@@ -22,6 +22,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #include "uMod_Main.h"
 #include <wx/filename.h>
+#include <wx/stdpaths.h>
 
 
 
@@ -585,7 +586,8 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
   }
 
 
-  wxString dll = wxGetCwd();
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  wxString dll = exe_path.GetPath();
   dll.Append( L"\\" uMod_d3d9_DI_dll);
 
   Inject(pi.hProcess, dll.wc_str(), "Nothing");
