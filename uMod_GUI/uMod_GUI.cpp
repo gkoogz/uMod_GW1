@@ -21,6 +21,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/ffile.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 
@@ -587,10 +588,35 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
 
   wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
-  wxString dll = exe_path.GetPath();
-  dll.Append( L"\\" uMod_d3d9_DI_dll);
+  wxFileName dll_path(exe_path.GetPath(), uMod_d3d9_DI_dll);
+  if (!dll_path.FileExists())
+  {
+    wxFileName fallback(wxGetCwd(), uMod_d3d9_DI_dll);
+    if (fallback.FileExists())
+    {
+      dll_path = fallback;
+    }
+    else
+    {
+      wxString msg;
+      msg << "Could not find injection dll at:\n"
+          << dll_path.GetFullPath() << "\n"
+          << fallback.GetFullPath() << "\n";
+      wxMessageBox(msg, "ERROR", wxOK|wxICON_ERROR);
+      return;
+    }
+  }
 
-  Inject(pi.hProcess, dll.wc_str(), "Nothing");
+  wxString log_path = dll_path.GetPathWithSep() + "uMod_injection.log";
+  wxFFile log_file(log_path, "a");
+  if (log_file.IsOpened())
+  {
+    log_file.Write("Injecting: ");
+    log_file.Write(dll_path.GetFullPath());
+    log_file.Write("\n");
+  }
+
+  Inject(pi.hProcess, dll_path.GetFullPath().wc_str(), "Nothing");
   ResumeThread(pi.hThread);
 }
 
