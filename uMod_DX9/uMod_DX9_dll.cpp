@@ -29,6 +29,37 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 //#include "detours.h"
 //#include "detourxs/detourxs/detourxs.h"
 
+#ifdef DIRECT_INJECTION
+#include <cstdarg>
+
+static void DITrace(const wchar_t *message)
+{
+  HANDLE file = CreateFileW(L"uMod_DI_trace.txt", FILE_APPEND_DATA, FILE_SHARE_READ, NULL,
+                            OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (file != INVALID_HANDLE_VALUE)
+  {
+    DWORD written = 0;
+    DWORD length = static_cast<DWORD>(lstrlenW(message));
+    WriteFile(file, message, length * sizeof(wchar_t), &written, NULL);
+    WriteFile(file, L"\r\n", 2 * sizeof(wchar_t), &written, NULL);
+    CloseHandle(file);
+  }
+
+  OutputDebugStringW(message);
+  OutputDebugStringW(L"\r\n");
+}
+
+static void DITraceFormat(const wchar_t *format, ...)
+{
+  wchar_t buffer[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(buffer, _countof(buffer), _TRUNCATE, format, args);
+  va_end(args);
+  DITrace(buffer);
+}
+#endif
+
 /*
 #include "detourxs/detourxs/ADE32.cpp"
 #include "detourxs/detourxs/detourxs.cpp"
@@ -71,11 +102,17 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	{
 	case DLL_PROCESS_ATTACH:
 	{
+#ifdef DIRECT_INJECTION
+	  DITraceFormat(L"DllMain attach: %p", hModule);
+#endif
 	  InitInstance(hModule);
 		break;
 	}
 	case DLL_PROCESS_DETACH:
 	{
+#ifdef DIRECT_INJECTION
+	  DITraceFormat(L"DllMain detach: %p", hModule);
+#endif
 	  ExitInstance();
 	  break;
 	}
@@ -103,12 +140,18 @@ void InitInstance(HINSTANCE hModule)
   wchar_t game[MAX_PATH];
   if (HookThisProgram( game)) //ask if we need to hook this program
   {
+#ifdef DIRECT_INJECTION
+    DITraceFormat(L"InitInstance: HookThisProgram ok (%ls)", game);
+#endif
     OpenMessage();
     Message("InitInstance: %lu\n", hModule);
 
     gl_TextureServer = new uMod_TextureServer(game); //create the server which listen on the pipe and prepare the update for the texture clients
 
     LoadOriginalDll();
+#ifdef DIRECT_INJECTION
+    DITraceFormat(L"InitInstance: LoadOriginalDll done (orig=%p)", gl_hOriginalDll);
+#endif
 
     // we detour the original Direct3DCreate9 to our MyDirect3DCreate9
     Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9");
@@ -116,6 +159,9 @@ void InitInstance(HINSTANCE hModule)
     {
       Message("Detour: Direct3DCreate9\n");
       Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
+#ifdef DIRECT_INJECTION
+      DITraceFormat(L"InitInstance: Detoured Direct3DCreate9 (%p)", Direct3DCreate9_fn);
+#endif
     }
 
     Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
@@ -123,16 +169,25 @@ void InitInstance(HINSTANCE hModule)
     {
       Message("Detour: Direct3DCreate9Ex\n");
       Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+#ifdef DIRECT_INJECTION
+      DITraceFormat(L"InitInstance: Detoured Direct3DCreate9Ex (%p)", Direct3DCreate9Ex_fn);
+#endif
     }
 
     if (gl_TextureServer->OpenPipe(game)) //open the pipe and send the name+path of this executable
     {
       Message("InitInstance: Pipe not opened\n");
+#ifdef DIRECT_INJECTION
+      DITrace(L"InitInstance: OpenPipe failed");
+#endif
       return;
     }
 
     gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
     if (gl_ServerThread==NULL) {Message("InitInstance: Serverthread not started\n");}
+#ifdef DIRECT_INJECTION
+    DITraceFormat(L"InitInstance: ServerThread %p", gl_ServerThread);
+#endif
 
   }
 }
@@ -150,6 +205,9 @@ void LoadOriginalDll(void)
 
   if (!gl_hOriginalDll)
   {
+#ifdef DIRECT_INJECTION
+    DITrace(L"LoadOriginalDll: LoadLibrary failed");
+#endif
     ExitProcess(0); // exit the hard way
   }
 }
@@ -188,6 +246,9 @@ void ExitInstance()
 IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
 {
   Message("uMod_Direct3DCreate9:  original %lu, uMod %lu\n", Direct3DCreate9_fn, uMod_Direct3DCreate9);
+#ifdef DIRECT_INJECTION
+  DITraceFormat(L"uMod_Direct3DCreate9: SDKVersion=%u", SDKVersion);
+#endif
 
   // in the Internet are many tutorials for detouring functions and all of them will work without the following 5 marked lines
   // but somehow, for me it only works, if I retour the function and calling afterward the original function
@@ -234,6 +295,9 @@ IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
 HRESULT APIENTRY uMod_Direct3DCreate9Ex( UINT SDKVersion, IDirect3D9Ex **ppD3D)
 {
   Message( "uMod_Direct3DCreate9Ex:  original %lu, uMod %lu\n", Direct3DCreate9Ex_fn, uMod_Direct3DCreate9Ex);
+#ifdef DIRECT_INJECTION
+  DITraceFormat(L"uMod_Direct3DCreate9Ex: SDKVersion=%u", SDKVersion);
+#endif
 
   // in the Internet are many tutorials for detouring functions and all of them will work without the following 5 marked lines
   // but somehow, for me it only works, if I retour the function and calling afterward the original function
