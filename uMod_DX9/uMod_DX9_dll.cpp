@@ -59,11 +59,21 @@ void AppendStartupTrace(const wchar_t *message)
   if (last_slash != NULL) *(last_slash + 1) = 0;
 
   wchar_t log_path[MAX_PATH];
-  _snwprintf_s(log_path, _countof(log_path), _TRUNCATE, L"%lsuMod_startup_trace.txt", module_path);
+  _snwprintf_s(log_path, _countof(log_path), _TRUNCATE, L"%lsuMod_startup_trace_%lu.txt", module_path, GetCurrentProcessId());
 
   FILE *file = NULL;
   if (_wfopen_s(&file, log_path, L"a, ccs=UTF-8") == 0 && file != NULL)
   {
+    static LONG header_written = 0;
+    if (InterlockedCompareExchange(&header_written, 1, 0) == 0)
+    {
+      wchar_t exe_path[MAX_PATH];
+      DWORD exe_len = GetModuleFileNameW(GetModuleHandle(NULL), exe_path, MAX_PATH);
+      if (exe_len > 0 && exe_len < MAX_PATH)
+      {
+        fwprintf(file, L"[%lu] Executable: %ls\n", GetCurrentProcessId(), exe_path);
+      }
+    }
     fwprintf(file, L"[%lu] %ls\n", GetCurrentProcessId(), message);
     fclose(file);
   }
