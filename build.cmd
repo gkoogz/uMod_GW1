@@ -43,4 +43,14 @@ if exist "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" (
 )
 
 echo Launching uMod GUI...
-start "" "%ROOT_DIR%uMod_GUI\bin\uMod.exe"
+echo Syncing runtime assets into GUI bin...
+if exist "%ROOT_DIR%uMod_public\languages" (
+  xcopy /E /I /Y "%ROOT_DIR%uMod_public\languages" "%ROOT_DIR%uMod_GUI\bin\languages" >nul
+)
+for %%F in (README_Deutsch.txt README_English.txt README_French.txt uMod_DI_Games.txt uMod_Settings.txt) do (
+  if exist "%ROOT_DIR%uMod_public\%%F" (
+    copy /Y "%ROOT_DIR%uMod_public\%%F" "%ROOT_DIR%uMod_GUI\bin\%%F" >nul
+  )
+)
+
+start "" /D "%ROOT_DIR%uMod_GUI\bin" "%ROOT_DIR%uMod_GUI\bin\uMod.exe"
