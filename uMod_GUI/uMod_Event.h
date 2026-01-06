@@ -25,8 +25,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 //we need our own event to pass send some arguments from the server or the client thread to the main thread
-class uMod_Event;
-wxDECLARE_EVENT(uMod_EVENT_TYPE, uMod_Event);
+extern const wxEventType uMod_EVENT_TYPE;
 
 class uMod_Event : public wxCommandEvent
 {

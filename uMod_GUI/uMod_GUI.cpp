@@ -30,7 +30,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #ifndef __CDT_PARSER__
 
-wxDEFINE_EVENT(uMod_EVENT_TYPE, uMod_Event);
+const wxEventType uMod_EVENT_TYPE = wxNewEventType();
 
 BEGIN_EVENT_TABLE(uMod_Frame, wxFrame)
   EVT_CLOSE(uMod_Frame::OnClose)
