@@ -1,18 +1,3 @@
-!IFDEF NI
-
-!IFDEF LOG_MESSAGE
-precompiler_flag = /D "LOG_MESSAGE" /D "NO_INJECTION"
-!ELSE
-precompiler_flag = /D "NO_INJECTION"
-!ENDIF
-
-def_file = /DEF:"uMod_DX9_dll_NO_INJECTION.def"
-obj_suff = NI.obj
-dll = d3d9.dll
-
-!ELSE
-
-!IFDEF DI
 !IFDEF LOG_MESSAGE
 precompiler_flag = /D "LOG_MESSAGE" /D "DIRECT_INJECTION"
 !ELSE
@@ -22,21 +7,6 @@ precompiler_flag =  /D "DIRECT_INJECTION"
 def_file = /DEF:"uMod_DX9_dll_DIRECT_INJECTION.def"
 obj_suff = DI.obj
 dll = uMod_d3d9_DI.dll
-
-!ELSE
-
-!IFDEF LOG_MESSAGE
-precompiler_flag = /D "LOG_MESSAGE" /D "HOOK_INJECTION"
-!ELSE
-precompiler_flag =  /D "HOOK_INJECTION"
-!ENDIF
-
-def_file = /DEF:"uMod_DX9_dll_HOOK_INJECTION.def"
-obj_suff = HI.obj
-dll = uMod_d3d9_HI.dll
-
-!ENDIF
-!ENDIF
 
 
 CXX = cl
@@ -75,7 +45,7 @@ headers = uMod_Main.h \
 	uMod_TextureClient.h \
 	uMod_TextureServer.h
 
-$(bin)\d3d9.dll: $(objects) $(obj_dir_marker)
+$(bin)\$(dll): $(objects) $(obj_dir_marker)
 	$(CLINK) $(LFLAGS) $(objects) /OUT:$(bin)\$(dll)
 	copy $(bin)\$(dll) ..\uMod_GUI\bin\$(dll)
 

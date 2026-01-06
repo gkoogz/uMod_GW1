@@ -39,7 +39,6 @@ typedef struct
 } PipeStruct;
 
 
-#define uMod_APP_DX9 L"uMod_DX9.txt"
 #define uMod_APP_DIR L"uMod"
 #define uMod_VERSION L"uMod V 1.0"
 
