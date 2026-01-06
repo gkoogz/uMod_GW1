@@ -33,10 +33,13 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <cstdarg>
 #include <cwchar>
 
+static HINSTANCE g_DllInstance = NULL;
+
 static void DITrace(const wchar_t *message)
 {
   wchar_t path[MAX_PATH] = L"uMod_DI_trace.txt";
-  DWORD len = GetModuleFileNameW(gl_hThisInstance, path, MAX_PATH);
+  HINSTANCE module = g_DllInstance != NULL ? g_DllInstance : GetModuleHandleW(NULL);
+  DWORD len = GetModuleFileNameW(module, path, MAX_PATH);
   if (len > 0 && len < MAX_PATH)
   {
     wchar_t *slash = wcsrchr(path, L'\\');
@@ -120,6 +123,7 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	case DLL_PROCESS_ATTACH:
 	{
 #ifdef DIRECT_INJECTION
+	  g_DllInstance = hModule;
 	  DITraceFormat(L"DllMain attach: %p", hModule);
 #endif
 	  InitInstance(hModule);
