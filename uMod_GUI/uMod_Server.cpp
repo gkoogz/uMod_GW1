@@ -19,6 +19,32 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
+
+namespace
+{
+void AppendGuiTrace(const wxString& message)
+{
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  wxString log_path = exe_path.GetPathWithSep() + "uMod_gui_trace.txt";
+  wxFile file;
+  if (wxFile::Exists(log_path))
+  {
+    file.Open(log_path, wxFile::write_append);
+  }
+  else
+  {
+    file.Open(log_path, wxFile::write);
+  }
+  if (file.IsOpened())
+  {
+    wxString line = message + "\n";
+    file.Write(line);
+    file.Close();
+  }
+}
+}
 
 
 uMod_Server::uMod_Server(uMod_Frame *frame) : wxThread(wxTHREAD_JOINABLE)
@@ -34,6 +60,7 @@ uMod_Server::~uMod_Server(void)
 
 void* uMod_Server::Entry(void)
 {
+  AppendGuiTrace("Server: thread started");
   bool  fConnected = false;
   HANDLE pipe_in;
   HANDLE pipe_out;
@@ -56,7 +83,11 @@ void* uMod_Server::Entry(void)
        SMALL_BUFSIZE,                  // input buffer size
        0,                        // client time-out
        NULL);                    // default security attribute
-    if (pipe_in == INVALID_HANDLE_VALUE) return NULL;
+    if (pipe_in == INVALID_HANDLE_VALUE)
+    {
+      AppendGuiTrace("Server: CreateNamedPipeW Game2uMod failed");
+      return NULL;
+    }
 
     pipe_out = CreateNamedPipeW(
        PIPE_uMod2Game,             // pipe name
@@ -68,12 +99,17 @@ void* uMod_Server::Entry(void)
        BIG_BUFSIZE,                  // input buffer size
        0,                        // client time-out
        NULL);                    // default security attribute
-    if (pipe_out == INVALID_HANDLE_VALUE) return NULL;
+    if (pipe_out == INVALID_HANDLE_VALUE)
+    {
+      AppendGuiTrace("Server: CreateNamedPipeW uMod2Game failed");
+      return NULL;
+    }
 
 
     // at first connect to the incoming pipe !!!
     fConnected = ConnectNamedPipe(pipe_in, NULL) ?
       true : (GetLastError() == ERROR_PIPE_CONNECTED);
+    AppendGuiTrace(wxString::Format("Server: ConnectNamedPipe Game2uMod=%d", fConnected ? 1 : 0));
     /*
     Beep(900,100);
     Beep(600,100);
@@ -92,11 +128,13 @@ void* uMod_Server::Entry(void)
 
       if (fSuccess)
       {
+        AppendGuiTrace(wxString::Format("Server: ReadFile Game2uMod bytes=%lu", num));
         if (num>2)
         {
           buffer[num]=0;
           buffer[num-1]=0;
           wxString name = (wchar_t*) buffer;
+          AppendGuiTrace(wxString::Format("Server: received name=%ls", name.wc_str()));
 
           if (name==abort) // kill this server thread
           {
@@ -108,6 +146,7 @@ void* uMod_Server::Entry(void)
 
           fConnected = ConnectNamedPipe(pipe_out, NULL) ?
             true : (GetLastError() == ERROR_PIPE_CONNECTED);
+          AppendGuiTrace(wxString::Format("Server: ConnectNamedPipe uMod2Game=%d", fConnected ? 1 : 0));
           if (fConnected)
           {
             uMod_Event event( uMod_EVENT_TYPE, ID_Add_Game);
@@ -115,6 +154,7 @@ void* uMod_Server::Entry(void)
             event.SetPipeIn(pipe_in);
             event.SetPipeOut(pipe_out);
             wxPostEvent( MainFrame, event);
+            AppendGuiTrace("Server: posted ID_Add_Game event");
           }
           else
           {
@@ -129,4 +169,3 @@ void* uMod_Server::Entry(void)
   }
   return NULL;
 }
-

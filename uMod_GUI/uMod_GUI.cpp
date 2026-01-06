@@ -24,6 +24,30 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 
+namespace
+{
+void AppendGuiTrace(const wxString& message)
+{
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  wxString log_path = exe_path.GetPathWithSep() + "uMod_gui_trace.txt";
+  wxFile file;
+  if (wxFile::Exists(log_path))
+  {
+    file.Open(log_path, wxFile::write_append);
+  }
+  else
+  {
+    file.Open(log_path, wxFile::write);
+  }
+  if (file.IsOpened())
+  {
+    wxString line = message + "\n";
+    file.Write(line);
+    file.Close();
+  }
+}
+}
+
 
 
 
@@ -213,6 +237,7 @@ int uMod_Frame::KillServer(void)
 
 void uMod_Frame::OnAddGame( wxCommandEvent &event)
 {
+  AppendGuiTrace("OnAddGame: received event");
   if (NumberOfGames>=MaxNumberOfGames)
   {
     if (GetMoreMemory( Clients, MaxNumberOfGames, MaxNumberOfGames+10))
@@ -224,6 +249,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
   }
 
   wxString name = ((uMod_Event&)event).GetName();
+  AppendGuiTrace(wxString::Format("OnAddGame: game name=%ls", name.wc_str()));
   PipeStruct pipe;
 
   pipe.In = ((uMod_Event&)event).GetPipeIn();
@@ -598,6 +624,7 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
 int uMod_Frame::ActivateGamesControl(void)
 {
+  AppendGuiTrace("ActivateGamesControl: enabling UI");
   MenuMain->Enable( ID_Menu_LoadTemplate, true);
   MenuMain->Enable( ID_Menu_SaveTemplate, true);
   MenuMain->Enable( ID_Menu_SaveTemplateAs, true);
