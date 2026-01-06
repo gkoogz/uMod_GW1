@@ -13,6 +13,14 @@ if errorlevel 1 (
 )
 popd
 
+echo Copying uMod DX9 DLL to GUI bin...
+if exist "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" (
+  copy /Y "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" "%ROOT_DIR%uMod_GUI\bin\uMod_d3d9_DI.dll"
+) else (
+  echo DX9 DLL not found in uMod_DX9\bin.
+  exit /b 1
+)
+
 echo Building uMod GUI...
 pushd "%ROOT_DIR%uMod_GUI"
 nmake -f makefile.vc BUILD=release
