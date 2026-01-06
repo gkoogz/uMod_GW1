@@ -30,11 +30,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #ifndef __CDT_PARSER__
 
-#if wxCHECK_VERSION(2, 9, 0)
-wxDEFINE_EVENT(uMod_EVENT_TYPE, uMod_Event);
-#else
 DEFINE_EVENT_TYPE(uMod_EVENT_TYPE)
-#endif
 
 BEGIN_EVENT_TABLE(uMod_Frame, wxFrame)
   EVT_CLOSE(uMod_Frame::OnClose)
