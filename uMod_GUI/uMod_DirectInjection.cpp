@@ -61,7 +61,6 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	// Main functions we will need to import
 	FARPROC loadlibrary		= NULL;
 	FARPROC getprocaddress	= NULL;
-	FARPROC exitprocess		= NULL;
 	FARPROC exitthread		= NULL;
 	FARPROC freelibraryandexitthread = NULL;
 
@@ -117,7 +116,6 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	// Get our functions
 	loadlibrary		= GetProcAddress(kernel32,	"LoadLibraryA");
 	getprocaddress	= GetProcAddress(kernel32,	"GetProcAddress");
-	exitprocess		= GetProcAddress(kernel32,	"ExitProcess");
 	exitthread		= GetProcAddress(kernel32,	"ExitThread");
 	freelibraryandexitthread = GetProcAddress(kernel32,	"FreeLibraryAndExitThread");
 
@@ -277,7 +275,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	if(!h)
 	{
 		MessageBox(0, "Could not load the dll: mydll.dll", "Error", MB_ICONERROR);
-		ExitProcess(0);
+		ExitThread(0);
 	}
 
 	// Get the address of the export function
@@ -285,7 +283,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	if(!p)
 	{
 		MessageBox(0, "Could not load the function: Initialize", "Error", MB_ICONERROR);
-		ExitProcess(0);
+		ExitThread(0);
 	}
 
 	// So we do not need a function pointer interface
@@ -349,17 +347,17 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		workspace[workspaceIndex++] = 0xFF;
 		workspace[workspaceIndex++] = 0xD0;
 
-	// ExitProcess
+	// ExitThread
 		// Push 0
 		workspace[workspaceIndex++] = 0x6A;
 		workspace[workspaceIndex++] = 0x00;
 
-		// MOV EAX, ADDRESS - Move the address of ExitProcess into EAX
+		// MOV EAX, ADDRESS - Move the address of ExitThread into EAX
 		workspace[workspaceIndex++] = 0xB8;
-		memcpy(workspace + workspaceIndex, &exitprocess, 4);
+		memcpy(workspace + workspaceIndex, &exitthread, 4);
 		workspaceIndex += 4;
 
-		// CALL EAX - Call MessageBoxA
+		// CALL EAX - Call ExitThread
 		workspace[workspaceIndex++] = 0xFF;
 		workspace[workspaceIndex++] = 0xD0;
 
@@ -428,20 +426,20 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		workspace[workspaceIndex++] = 0xFF;
 		workspace[workspaceIndex++] = 0xD0;
 
-	// ExitProcess
+	// ExitThread
 		// Push 0
 		workspace[workspaceIndex++] = 0x6A;
 		workspace[workspaceIndex++] = 0x00;
 
-		// MOV EAX, ADDRESS - Move the address of ExitProcess into EAX
+		// MOV EAX, ADDRESS - Move the address of ExitThread into EAX
 		workspace[workspaceIndex++] = 0xB8;
-		memcpy(workspace + workspaceIndex, &exitprocess, 4);
+		memcpy(workspace + workspaceIndex, &exitthread, 4);
 		workspaceIndex += 4;
 
 //	Now that we have the address of the function, we cam call it, 
 // if there was an error, the messagebox would be called as well.
 
-	// CALL EAX - Call ExitProcess -or- the Initialize function
+	// CALL EAX - Call ExitThread -or- the Initialize function
 	workspace[workspaceIndex++] = 0xFF;
 	workspace[workspaceIndex++] = 0xD0;
 
