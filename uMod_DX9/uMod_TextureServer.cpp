@@ -83,6 +83,12 @@ uMod_TextureServer::~uMod_TextureServer(void)
   Pipe.In = INVALID_HANDLE_VALUE;
   if (Pipe.Out != INVALID_HANDLE_VALUE) CloseHandle(Pipe.Out);
   Pipe.Out = INVALID_HANDLE_VALUE;
+
+  if (Clients != NULL)
+  {
+    delete [] Clients;
+    Clients = NULL;
+  }
 }
 
 int uMod_TextureServer::AddClient(uMod_TextureClient *client, TextureFileStruct** update, int* number) // called from a client
@@ -121,7 +127,11 @@ int uMod_TextureServer::AddClient(uMod_TextureClient *client, TextureFileStruct*
   }
 
 
-  if (int ret = PrepareUpdate( update, number)) return (ret); // get a copy of all texture to be modded
+  if (int ret = PrepareUpdate( update, number)) // get a copy of all texture to be modded
+  {
+    if (int unlock_ret = UnlockMutex()) return (unlock_ret);
+    return (ret);
+  }
 
 
   if (NumberOfClients == LenghtOfClients) //allocate more memory
@@ -486,7 +496,11 @@ int uMod_TextureServer::PropagateUpdate(uMod_TextureClient* client) // called fr
   {
     TextureFileStruct* update;
     int number;
-    if (int ret = PrepareUpdate( &update, &number)) return (ret);
+    if (int ret = PrepareUpdate( &update, &number))
+    {
+      if (int unlock_ret = UnlockMutex()) return (unlock_ret);
+      return (ret);
+    }
     client->AddUpdate(update, number);
   }
   else
@@ -495,7 +509,11 @@ int uMod_TextureServer::PropagateUpdate(uMod_TextureClient* client) // called fr
     {
       TextureFileStruct* update;
       int number;
-      if (int ret = PrepareUpdate( &update, &number)) return (ret);
+      if (int ret = PrepareUpdate( &update, &number))
+      {
+        if (int unlock_ret = UnlockMutex()) return (unlock_ret);
+        return (ret);
+      }
       Clients[i]->AddUpdate(update, number);
     }
   }
