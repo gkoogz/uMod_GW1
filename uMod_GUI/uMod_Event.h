@@ -25,9 +25,14 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 //we need our own event to pass send some arguments from the server or the client thread to the main thread
+#if wxCHECK_VERSION(2, 9, 0)
+class uMod_Event;
+wxDECLARE_EVENT(uMod_EVENT_TYPE, uMod_Event);
+#else
 BEGIN_DECLARE_EVENT_TYPES()
 DECLARE_EVENT_TYPE( uMod_EVENT_TYPE, -1)
 END_DECLARE_EVENT_TYPES()
+#endif
 
 class uMod_Event : public wxCommandEvent
 {
