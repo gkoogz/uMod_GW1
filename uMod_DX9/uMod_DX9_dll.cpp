@@ -31,10 +31,27 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #ifdef DIRECT_INJECTION
 #include <cstdarg>
+#include <cwchar>
 
 static void DITrace(const wchar_t *message)
 {
-  HANDLE file = CreateFileW(L"uMod_DI_trace.txt", FILE_APPEND_DATA, FILE_SHARE_READ, NULL,
+  wchar_t path[MAX_PATH] = L"uMod_DI_trace.txt";
+  DWORD len = GetModuleFileNameW(gl_hThisInstance, path, MAX_PATH);
+  if (len > 0 && len < MAX_PATH)
+  {
+    wchar_t *slash = wcsrchr(path, L'\\');
+    if (slash != NULL)
+    {
+      slash[1] = L'\0';
+      wcscat_s(path, L"uMod_DI_trace.txt");
+    }
+    else
+    {
+      wcscpy_s(path, L"uMod_DI_trace.txt");
+    }
+  }
+
+  HANDLE file = CreateFileW(path, FILE_APPEND_DATA, FILE_SHARE_READ, NULL,
                             OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
   if (file != INVALID_HANDLE_VALUE)
   {
