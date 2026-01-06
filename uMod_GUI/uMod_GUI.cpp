@@ -260,6 +260,23 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
   {
     if (Clients[i]->GetName() == name)
     {
+      if (Clients[i]->IsRunning())
+      {
+        AppendGuiTrace("OnAddGame: duplicate game ignored while client running");
+        if (pipe.In != INVALID_HANDLE_VALUE)
+        {
+          DisconnectNamedPipe(pipe.In);
+          CloseHandle(pipe.In);
+          pipe.In = INVALID_HANDLE_VALUE;
+        }
+        if (pipe.Out != INVALID_HANDLE_VALUE)
+        {
+          DisconnectNamedPipe(pipe.Out);
+          CloseHandle(pipe.Out);
+          pipe.Out = INVALID_HANDLE_VALUE;
+        }
+        return;
+      }
       AppendGuiTrace("OnAddGame: replacing existing client");
       Notebook->DeletePage(i);
       Clients[i]->SuppressDeleteEvent();
