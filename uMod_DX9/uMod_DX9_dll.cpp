@@ -34,6 +34,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <cwchar>
 
 static HINSTANCE g_DllInstance = NULL;
+static PVOID g_ExceptionHandler = NULL;
 
 static void DITrace(const wchar_t *message)
 {
@@ -77,6 +78,17 @@ static void DITraceFormat(const wchar_t *format, ...)
   _vsnwprintf_s(buffer, _countof(buffer), _TRUNCATE, format, args);
   va_end(args);
   DITrace(buffer);
+}
+
+static LONG WINAPI DIVectoredExceptionHandler(PEXCEPTION_POINTERS info)
+{
+  if (info != NULL && info->ExceptionRecord != NULL)
+  {
+    DITraceFormat(L"Exception: code=0x%08lX addr=%p",
+                  info->ExceptionRecord->ExceptionCode,
+                  info->ExceptionRecord->ExceptionAddress);
+  }
+  return EXCEPTION_CONTINUE_SEARCH;
 }
 #endif
 
@@ -124,6 +136,7 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	{
 #ifdef DIRECT_INJECTION
 	  g_DllInstance = hModule;
+	  g_ExceptionHandler = AddVectoredExceptionHandler(1, DIVectoredExceptionHandler);
 	  DITraceFormat(L"DllMain attach: %p", hModule);
 #endif
 	  InitInstance(hModule);
@@ -132,6 +145,11 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	case DLL_PROCESS_DETACH:
 	{
 #ifdef DIRECT_INJECTION
+	  if (g_ExceptionHandler != NULL)
+	  {
+	    RemoveVectoredExceptionHandler(g_ExceptionHandler);
+	    g_ExceptionHandler = NULL;
+	  }
 	  DITraceFormat(L"DllMain detach: %p", hModule);
 #endif
 	  ExitInstance();
