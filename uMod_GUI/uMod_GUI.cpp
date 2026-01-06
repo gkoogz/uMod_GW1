@@ -21,9 +21,9 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
-#include <wx/ffile.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
+#include <wx/textfile.h>
 
 
 
@@ -633,12 +633,20 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
   }
 
   wxString log_path = dll_path.GetPathWithSep() + "uMod_injection.log";
-  wxFFile log_file(log_path, "a");
+  wxTextFile log_file;
+  if (log_file.Exists(log_path))
+  {
+    log_file.Open(log_path);
+  }
+  else
+  {
+    log_file.Create(log_path);
+  }
   if (log_file.IsOpened())
   {
-    log_file.Write("Injecting: ");
-    log_file.Write(dll_path.GetFullPath());
-    log_file.Write("\r\n");
+    log_file.AddLine("Injecting: " + dll_path.GetFullPath());
+    log_file.Write();
+    log_file.Close();
   }
 
   Inject(pi.hProcess, dll_path.GetFullPath().wc_str(), "Nothing");
