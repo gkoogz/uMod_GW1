@@ -238,6 +238,7 @@ int uMod_Frame::KillServer(void)
 void uMod_Frame::OnAddGame( wxCommandEvent &event)
 {
   AppendGuiTrace("OnAddGame: received event");
+  ActivateGamesControl();
   if (NumberOfGames>=MaxNumberOfGames)
   {
     if (GetMoreMemory( Clients, MaxNumberOfGames, MaxNumberOfGames+10))
@@ -270,6 +271,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
   uMod_GamePage *page = new uMod_GamePage( Notebook, name, save_file, client->Pipe);
   if (page->LastError.Len()>0)
   {
+    AppendGuiTrace(wxString::Format("OnAddGame: page init error=%ls", page->LastError.wc_str()));
     wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
     delete page;
     return;
@@ -286,6 +288,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
 
 void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
 {
+  AppendGuiTrace("OnDeleteGame: received event");
   uMod_Client *client = ((uMod_Event&)event).GetClient();
   for (int i=0; i<NumberOfGames; i++) if (Clients[i]==client)
   {
