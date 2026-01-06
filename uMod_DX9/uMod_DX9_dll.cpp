@@ -40,10 +40,6 @@ HINSTANCE             gl_hOriginalDll = NULL;
 HINSTANCE             gl_hThisInstance = NULL;
 uMod_TextureServer*    gl_TextureServer = NULL;
 HANDLE                gl_ServerThread = NULL;
-HANDLE                gl_StartupThread = NULL;
-static wchar_t         gl_GameName[MAX_PATH];
-static LONG            gl_StartupState = 0;
-static LONG            gl_AttachState = 0;
 
 namespace
 {
@@ -110,14 +106,7 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
   {
   case DLL_PROCESS_ATTACH:
   {
-    if (InterlockedCompareExchange(&gl_AttachState, 1, 0) == 0)
-    {
-      InitInstance(hModule);
-    }
-    else
-    {
-      Message("DllMain: InitInstance already called\n");
-    }
+    InitInstance(hModule);
     break;
   }
   case DLL_PROCESS_DETACH:
@@ -140,80 +129,6 @@ DWORD WINAPI ServerThread( LPVOID lpParam )
   return (0);
 }
 
-DWORD WINAPI StartupThread( LPVOID lpParam )
-{
-  UNREFERENCED_PARAMETER(lpParam);
-  AppendStartupTrace(L"StartupThread: begin");
-  wchar_t game[MAX_PATH];
-  if (!HookThisProgram(game)) return 0;
-  AppendStartupTrace(L"StartupThread: HookThisProgram ok");
-  for (int i = 0; i < MAX_PATH; i++)
-  {
-    gl_GameName[i] = game[i];
-    if (game[i] == 0) break;
-  }
-
-  OpenMessage();
-  Message("StartupThread: %lu\n", gl_hThisInstance);
-  AppendStartupTrace(L"StartupThread: OpenMessage ok");
-
-  gl_TextureServer = new uMod_TextureServer(gl_GameName); //create the server which listen on the pipe and prepare the update for the texture clients
-  AppendStartupTrace(L"StartupThread: TextureServer created");
-
-  LoadOriginalDll();
-  AppendStartupTrace(L"StartupThread: LoadOriginalDll ok");
-
-  wchar_t no_detour[2];
-  bool skip_detour = GetEnvironmentVariableW(L"UMOD_NO_DETOUR", no_detour, 2) > 0;
-  if (skip_detour)
-  {
-    Message("StartupThread: UMOD_NO_DETOUR set, skipping detours\n");
-    AppendStartupTrace(L"StartupThread: UMOD_NO_DETOUR set");
-  }
-  else
-  {
-    // we detour the original Direct3DCreate9 to our MyDirect3DCreate9
-    Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9");
-    if (Direct3DCreate9_fn!=NULL)
-    {
-      Message("Detour: Direct3DCreate9\n");
-      Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
-      AppendStartupTrace(L"StartupThread: Detour Direct3DCreate9 ok");
-    }
-
-    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
-    if (Direct3DCreate9Ex_fn!=NULL)
-    {
-      Message("Detour: Direct3DCreate9Ex\n");
-      Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
-      AppendStartupTrace(L"StartupThread: Detour Direct3DCreate9Ex ok");
-    }
-  }
-
-  wchar_t no_pipe[2];
-  bool skip_pipe = GetEnvironmentVariableW(L"UMOD_NO_PIPE", no_pipe, 2) > 0;
-  if (skip_pipe)
-  {
-    Message("StartupThread: UMOD_NO_PIPE set, skipping pipe connect\n");
-    AppendStartupTrace(L"StartupThread: UMOD_NO_PIPE set");
-    return 0;
-  }
-
-  if (gl_TextureServer->OpenPipe(gl_GameName)) //open the pipe and send the name+path of this executable
-  {
-    DWORD error = GetLastError();
-    Message("StartupThread: Pipe not opened (error %lu)\n", error);
-    AppendStartupTrace(L"StartupThread: OpenPipe failed");
-    return 0;
-  }
-  AppendStartupTrace(L"StartupThread: OpenPipe ok");
-
-  gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
-  if (gl_ServerThread==NULL) {Message("StartupThread: Serverthread not started\n");}
-  AppendStartupTrace(L"StartupThread: ServerThread started");
-  return 0;
-}
-
 void InitInstance(HINSTANCE hModule)
 {
 
@@ -221,13 +136,50 @@ void InitInstance(HINSTANCE hModule)
 
   gl_hThisInstance = (HINSTANCE)  hModule;
 
-  if (InterlockedCompareExchange(&gl_StartupState, 1, 0) != 0)
+  AppendStartupTrace(L"InitInstance: begin");
+  wchar_t game[MAX_PATH];
+  if (!HookThisProgram(game)) return;
+  AppendStartupTrace(L"InitInstance: HookThisProgram ok");
+
+  OpenMessage();
+  Message("InitInstance: %lu\n", gl_hThisInstance);
+  AppendStartupTrace(L"InitInstance: OpenMessage ok");
+
+  gl_TextureServer = new uMod_TextureServer(game); //create the server which listen on the pipe and prepare the update for the texture clients
+  AppendStartupTrace(L"InitInstance: TextureServer created");
+
+  LoadOriginalDll();
+  AppendStartupTrace(L"InitInstance: LoadOriginalDll ok");
+
+  // we detour the original Direct3DCreate9 to our MyDirect3DCreate9
+  Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9");
+  if (Direct3DCreate9_fn!=NULL)
   {
-    Message("InitInstance: StartupThread already started\n");
+    Message("Detour: Direct3DCreate9\n");
+    Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
+    AppendStartupTrace(L"InitInstance: Detour Direct3DCreate9 ok");
+  }
+
+  Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
+  if (Direct3DCreate9Ex_fn!=NULL)
+  {
+    Message("Detour: Direct3DCreate9Ex\n");
+    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+    AppendStartupTrace(L"InitInstance: Detour Direct3DCreate9Ex ok");
+  }
+
+  if (gl_TextureServer->OpenPipe(game)) //open the pipe and send the name+path of this executable
+  {
+    DWORD error = GetLastError();
+    Message("InitInstance: Pipe not opened (error %lu)\n", error);
+    AppendStartupTrace(L"InitInstance: OpenPipe failed");
     return;
   }
-  gl_StartupThread = CreateThread( NULL, 0, StartupThread, NULL, 0, NULL);
-  if (gl_StartupThread==NULL) {Message("InitInstance: StartupThread not started\n");}
+  AppendStartupTrace(L"InitInstance: OpenPipe ok");
+
+  gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
+  if (gl_ServerThread==NULL) {Message("InitInstance: Serverthread not started\n");}
+  AppendStartupTrace(L"InitInstance: ServerThread started");
 }
 
 void LoadOriginalDll(void)
@@ -258,13 +210,6 @@ void ExitInstance()
     CloseHandle(gl_ServerThread); // kill the server thread
     gl_ServerThread = NULL;
   }
-  if (gl_StartupThread!=NULL)
-  {
-    CloseHandle(gl_StartupThread);
-    gl_StartupThread = NULL;
-  }
-  gl_StartupState = 0;
-  gl_AttachState = 0;
   if (gl_TextureServer!=NULL)
   {
     delete gl_TextureServer; //delete the texture server
