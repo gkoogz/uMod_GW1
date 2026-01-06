@@ -34,6 +34,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <cwchar>
 
 static HINSTANCE g_DllInstance = NULL;
+static bool g_InitDone = false;
 
 static void DITrace(const wchar_t *message)
 {
@@ -111,7 +112,16 @@ FILE*                 gl_File = NULL;
 #endif
 
 
-void Nothing(void) {(void)NULL;}
+void Nothing(void)
+{
+#ifdef DIRECT_INJECTION
+  if (!g_InitDone)
+  {
+    g_InitDone = true;
+    InitInstance(g_DllInstance != NULL ? g_DllInstance : GetModuleHandleW(NULL));
+  }
+#endif
+}
 /*
  * dll entry routine, here we initialize or clean up
  */
@@ -126,16 +136,18 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 #ifdef DIRECT_INJECTION
 	  g_DllInstance = hModule;
 	  DITraceFormat(L"DllMain attach: %p", hModule);
-#endif
+#else
 	  InitInstance(hModule);
+#endif
 		break;
 	}
 	case DLL_PROCESS_DETACH:
 	{
 #ifdef DIRECT_INJECTION
 	  DITraceFormat(L"DllMain detach: %p", hModule);
-#endif
+#else
 	  ExitInstance();
+#endif
 	  break;
 	}
   default:  break;
