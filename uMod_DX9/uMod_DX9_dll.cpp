@@ -43,6 +43,7 @@ HANDLE                gl_ServerThread = NULL;
 HANDLE                gl_StartupThread = NULL;
 static wchar_t         gl_GameName[MAX_PATH];
 static LONG            gl_StartupState = 0;
+static LONG            gl_AttachState = 0;
 
 namespace
 {
@@ -63,7 +64,7 @@ void AppendStartupTrace(const wchar_t *message)
   FILE *file = NULL;
   if (_wfopen_s(&file, log_path, L"a, ccs=UTF-8") == 0 && file != NULL)
   {
-    fwprintf(file, L"%ls\n", message);
+    fwprintf(file, L"[%lu] %ls\n", GetCurrentProcessId(), message);
     fclose(file);
   }
 }
@@ -96,19 +97,27 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
   UNREFERENCED_PARAMETER(lpReserved);
 
   switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
-	{
-	  InitInstance(hModule);
-		break;
-	}
-	case DLL_PROCESS_DETACH:
-	{
-	  ExitInstance();
-	  break;
-	}
-  default:  break;
-	}
+  {
+  case DLL_PROCESS_ATTACH:
+  {
+    if (InterlockedCompareExchange(&gl_AttachState, 1, 0) == 0)
+    {
+      InitInstance(hModule);
+    }
+    else
+    {
+      Message("DllMain: InitInstance already called\n");
+    }
+    break;
+  }
+  case DLL_PROCESS_DETACH:
+  {
+    ExitInstance();
+    break;
+  }
+  default:
+    break;
+  }
     
   return (true);
 }
@@ -245,6 +254,7 @@ void ExitInstance()
     gl_StartupThread = NULL;
   }
   gl_StartupState = 0;
+  gl_AttachState = 0;
   if (gl_TextureServer!=NULL)
   {
     delete gl_TextureServer; //delete the texture server
