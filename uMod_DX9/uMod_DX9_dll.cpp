@@ -98,36 +98,17 @@ DWORD WINAPI ServerThread( LPVOID lpParam )
 DWORD WINAPI StartupThread( LPVOID lpParam )
 {
   UNREFERENCED_PARAMETER(lpParam);
-  if (gl_TextureServer == NULL) return 0;
-  if (gl_TextureServer->OpenPipe(gl_GameName)) //open the pipe and send the name+path of this executable
-  {
-    DWORD error = GetLastError();
-    Message("StartupThread: Pipe not opened (error %lu)\n", error);
-    return 0;
-  }
-
-  gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
-  if (gl_ServerThread==NULL) {Message("StartupThread: Serverthread not started\n");}
-  return 0;
-}
-
-void InitInstance(HINSTANCE hModule)
-{
-
-  DisableThreadLibraryCalls( hModule ); //reduce overhead
-
-  gl_hThisInstance = (HINSTANCE)  hModule;
-
-  OpenMessage();
-  Message("InitInstance: %lu\n", hModule);
-
   wchar_t game[MAX_PATH];
-  if (!HookThisProgram(game)) return;
+  if (!HookThisProgram(game)) return 0;
   for (int i = 0; i < MAX_PATH; i++)
   {
     gl_GameName[i] = game[i];
     if (game[i] == 0) break;
   }
+
+  OpenMessage();
+  Message("StartupThread: %lu\n", gl_hThisInstance);
+
   gl_TextureServer = new uMod_TextureServer(gl_GameName); //create the server which listen on the pipe and prepare the update for the texture clients
 
   LoadOriginalDll();
@@ -146,6 +127,25 @@ void InitInstance(HINSTANCE hModule)
     Message("Detour: Direct3DCreate9Ex\n");
     Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
   }
+
+  if (gl_TextureServer->OpenPipe(gl_GameName)) //open the pipe and send the name+path of this executable
+  {
+    DWORD error = GetLastError();
+    Message("StartupThread: Pipe not opened (error %lu)\n", error);
+    return 0;
+  }
+
+  gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
+  if (gl_ServerThread==NULL) {Message("StartupThread: Serverthread not started\n");}
+  return 0;
+}
+
+void InitInstance(HINSTANCE hModule)
+{
+
+  DisableThreadLibraryCalls( hModule ); //reduce overhead
+
+  gl_hThisInstance = (HINSTANCE)  hModule;
 
   gl_StartupThread = CreateThread( NULL, 0, StartupThread, NULL, 0, NULL);
   if (gl_StartupThread==NULL) {Message("InitInstance: StartupThread not started\n");}
