@@ -14,6 +14,9 @@ if errorlevel 1 (
 popd
 
 echo Copying uMod DX9 DLL to GUI bin...
+if not exist "%ROOT_DIR%uMod_GUI\bin" (
+  mkdir "%ROOT_DIR%uMod_GUI\bin"
+)
 if exist "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" (
   copy /Y "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" "%ROOT_DIR%uMod_GUI\bin\uMod_d3d9_DI.dll"
 ) else (
@@ -30,6 +33,14 @@ if errorlevel 1 (
   exit /b 1
 )
 popd
+
+echo Ensuring uMod DX9 DLL is available next to GUI...
+if exist "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" (
+  copy /Y "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" "%ROOT_DIR%uMod_GUI\bin\uMod_d3d9_DI.dll"
+) else (
+  echo DX9 DLL not found in uMod_DX9\bin.
+  exit /b 1
+)
 
 echo Launching uMod GUI...
 start "" "%ROOT_DIR%uMod_GUI\bin\uMod.exe"
