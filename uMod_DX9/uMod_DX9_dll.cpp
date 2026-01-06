@@ -42,6 +42,7 @@ uMod_TextureServer*    gl_TextureServer = NULL;
 HANDLE                gl_ServerThread = NULL;
 HANDLE                gl_StartupThread = NULL;
 static wchar_t         gl_GameName[MAX_PATH];
+static LONG            gl_StartupState = 0;
 
 namespace
 {
@@ -201,6 +202,11 @@ void InitInstance(HINSTANCE hModule)
 
   gl_hThisInstance = (HINSTANCE)  hModule;
 
+  if (InterlockedCompareExchange(&gl_StartupState, 1, 0) != 0)
+  {
+    Message("InitInstance: StartupThread already started\n");
+    return;
+  }
   gl_StartupThread = CreateThread( NULL, 0, StartupThread, NULL, 0, NULL);
   if (gl_StartupThread==NULL) {Message("InitInstance: StartupThread not started\n");}
 }
@@ -238,6 +244,7 @@ void ExitInstance()
     CloseHandle(gl_StartupThread);
     gl_StartupThread = NULL;
   }
+  gl_StartupState = 0;
   if (gl_TextureServer!=NULL)
   {
     delete gl_TextureServer; //delete the texture server
