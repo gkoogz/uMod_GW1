@@ -678,9 +678,8 @@ int uMod_Frame::DeactivateGamesControl(void)
   MenuMain->Enable( ID_Menu_SaveTemplateAs, false);
   MenuMain->Enable( ID_Menu_SetDefaultTemplate, false);
 
-
-  OpenButton->Enable( false);
-  DirectoryButton->Enable( false);
+  OpenButton->Enable( true);
+  DirectoryButton->Enable( true);
   UpdateButton->Enable( false);
   ReloadButton->Enable( false);
   return 0;
