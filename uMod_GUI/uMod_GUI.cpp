@@ -256,7 +256,22 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
   pipe.In = ((uMod_Event&)event).GetPipeIn();
   pipe.Out = ((uMod_Event&)event).GetPipeOut();
 
-  uMod_Client *client = new uMod_Client( pipe, this);
+  for (int i = 0; i < NumberOfGames; i++)
+  {
+    if (Clients[i]->GetName() == name)
+    {
+      AppendGuiTrace("OnAddGame: replacing existing client");
+      Notebook->DeletePage(i);
+      Clients[i]->ClosePipes();
+      Clients[i]->Wait();
+      delete Clients[i];
+      NumberOfGames--;
+      for (int j = i; j < NumberOfGames; j++) Clients[j] = Clients[j + 1];
+      break;
+    }
+  }
+
+  uMod_Client *client = new uMod_Client( pipe, this, name);
   client->Create();
   client->Run();
 

@@ -30,16 +30,19 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 class uMod_Client : public wxThread
 {
 public:
-  uMod_Client( PipeStruct &pipe, uMod_Frame *frame);
+  uMod_Client( PipeStruct &pipe, uMod_Frame *frame, const wxString &name);
   virtual ~uMod_Client(void);
 
   void* Entry(void);
+  void ClosePipes(void);
+  const wxString& GetName(void) const {return Name;}
 
 
   PipeStruct Pipe;
 
 private:
   uMod_Frame *MainFrame;
+  wxString Name;
 };
 
 #endif /* uMod_CLIENT_H_ */

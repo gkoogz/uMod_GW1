@@ -46,20 +46,32 @@ void AppendGuiTrace(const wxString& message)
 }
 }
 
-uMod_Client::uMod_Client( PipeStruct &pipe, uMod_Frame *frame) : wxThread(wxTHREAD_JOINABLE)
+uMod_Client::uMod_Client( PipeStruct &pipe, uMod_Frame *frame, const wxString &name) : wxThread(wxTHREAD_JOINABLE)
 {
   Pipe.In = pipe.In;
   Pipe.Out = pipe.Out;
   MainFrame = frame;
+  Name = name;
 }
 
 uMod_Client::~uMod_Client(void)
+{
+  ClosePipes();
+}
+
+void uMod_Client::ClosePipes(void)
 {
   if (Pipe.In != INVALID_HANDLE_VALUE)
   {
     DisconnectNamedPipe(Pipe.In);
     CloseHandle(Pipe.In);
     Pipe.In = INVALID_HANDLE_VALUE;
+  }
+  if (Pipe.Out != INVALID_HANDLE_VALUE)
+  {
+    DisconnectNamedPipe(Pipe.Out);
+    CloseHandle(Pipe.Out);
+    Pipe.Out = INVALID_HANDLE_VALUE;
   }
 }
 
@@ -100,8 +112,7 @@ void* uMod_Client::Entry(void)
       break;
     }
   }
-  CloseHandle(Pipe.In);
-  Pipe.In = INVALID_HANDLE_VALUE;
+  ClosePipes();
 
   uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
   event.SetClient(this);
