@@ -25,9 +25,31 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #ifdef LOG_MESSAGE
 extern FILE *gl_File;
+extern HINSTANCE gl_hThisInstance;
+
+static inline FILE *uMod_OpenLogFile()
+{
+  wchar_t module_path[MAX_PATH];
+  DWORD len = GetModuleFileNameW(gl_hThisInstance, module_path, MAX_PATH);
+  if (len == 0 || len >= MAX_PATH) return NULL;
+
+  DWORD pos = len;
+  while (pos > 0)
+  {
+    if (module_path[pos - 1] == L'\\' || module_path[pos - 1] == L'/') break;
+    pos--;
+  }
+  module_path[pos] = 0;
+  wcscat_s(module_path, L"uMod_log.txt");
+
+  FILE *file = NULL;
+  if (_wfopen_s(&file, module_path, L"wt") != 0) return NULL;
+  fprintf(file, "DI 40: 0000000\n");
+  return file;
+}
 
 #define Message(...) {if (gl_File!=NULL) {fprintf( gl_File, __VA_ARGS__); fflush(gl_File);}}
-#define OpenMessage(...) {if (fopen_s( &gl_File, "uMod_log.txt", "wt")) gl_File=NULL; else fprintf( gl_File, "DI 40: 0000000\n");}
+#define OpenMessage(...) {gl_File = uMod_OpenLogFile();}
 #define CloseMessage(...) {if (gl_File!=NULL) fclose(gl_File);}
 
 
