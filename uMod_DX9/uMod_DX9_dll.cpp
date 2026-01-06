@@ -317,12 +317,21 @@ IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
   if (Direct3DCreate9_fn)
   {
     pIDirect3D9_orig = Direct3DCreate9_fn(SDKVersion); //creating the original IDirect3D9 object
+#ifdef DIRECT_INJECTION
+    DITraceFormat(L"uMod_Direct3DCreate9: original %p", pIDirect3D9_orig);
+#endif
   }
   else return (NULL);
   uMod_IDirect3D9 *pIDirect3D9 = NULL;
   if (pIDirect3D9_orig)
   {
     pIDirect3D9 = new uMod_IDirect3D9( pIDirect3D9_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
+  }
+  else
+  {
+#ifdef DIRECT_INJECTION
+    DITrace(L"uMod_Direct3DCreate9: original returned NULL");
+#endif
   }
 
   // we detour again
@@ -368,6 +377,9 @@ HRESULT APIENTRY uMod_Direct3DCreate9Ex( UINT SDKVersion, IDirect3D9Ex **ppD3D)
   if (Direct3DCreate9Ex_fn)
   {
     ret = Direct3DCreate9Ex_fn(SDKVersion, &pIDirect3D9Ex_orig); //creating the original IDirect3D9 object
+#ifdef DIRECT_INJECTION
+    DITraceFormat(L"uMod_Direct3DCreate9Ex: ret=0x%08lX orig=%p", ret, pIDirect3D9Ex_orig);
+#endif
   }
   else return (D3DERR_NOTAVAILABLE);
 
@@ -377,6 +389,12 @@ HRESULT APIENTRY uMod_Direct3DCreate9Ex( UINT SDKVersion, IDirect3D9Ex **ppD3D)
   if (pIDirect3D9Ex_orig)
   {
     pIDirect3D9Ex = new uMod_IDirect3D9Ex( pIDirect3D9Ex_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
+  }
+  else
+  {
+#ifdef DIRECT_INJECTION
+    DITrace(L"uMod_Direct3DCreate9Ex: original returned NULL");
+#endif
   }
 
   // we detour again
