@@ -588,23 +588,48 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
 
   wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  wxArrayString tried_paths;
+
   wxFileName dll_path(exe_path.GetPath(), uMod_d3d9_DI_dll);
+  tried_paths.Add(dll_path.GetFullPath());
+
+  if (!dll_path.FileExists())
+  {
+    wxFileName dx9_dir(exe_path.GetPath(), "");
+    dx9_dir.RemoveLastDir();
+    dx9_dir.RemoveLastDir();
+    dx9_dir.AppendDir("uMod_DX9");
+    dx9_dir.AppendDir("bin");
+    wxFileName dx9_dll(dx9_dir.GetFullPath(), uMod_d3d9_DI_dll);
+    tried_paths.Add(dx9_dll.GetFullPath());
+
+    if (dx9_dll.FileExists())
+    {
+      dll_path = dx9_dll;
+    }
+  }
+
   if (!dll_path.FileExists())
   {
     wxFileName fallback(wxGetCwd(), uMod_d3d9_DI_dll);
+    tried_paths.Add(fallback.GetFullPath());
+
     if (fallback.FileExists())
     {
       dll_path = fallback;
     }
-    else
+  }
+
+  if (!dll_path.FileExists())
+  {
+    wxString msg;
+    msg << "Could not find injection dll. Tried:\n";
+    for (size_t i = 0; i < tried_paths.GetCount(); ++i)
     {
-      wxString msg;
-      msg << "Could not find injection dll at:\n"
-          << dll_path.GetFullPath() << "\n"
-          << fallback.GetFullPath() << "\n";
-      wxMessageBox(msg, "ERROR", wxOK|wxICON_ERROR);
-      return;
+      msg << tried_paths[i] << "\n";
     }
+    wxMessageBox(msg, "ERROR", wxOK|wxICON_ERROR);
+    return;
   }
 
   wxString log_path = dll_path.GetPathWithSep() + "uMod_injection.log";
@@ -613,7 +638,7 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
   {
     log_file.Write("Injecting: ");
     log_file.Write(dll_path.GetFullPath());
-    log_file.Write("\n");
+    log_file.Write("\r\n");
   }
 
   Inject(pi.hProcess, dll_path.GetFullPath().wc_str(), "Nothing");
