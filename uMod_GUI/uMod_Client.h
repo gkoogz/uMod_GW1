@@ -35,6 +35,7 @@ public:
 
   void* Entry(void);
   void ClosePipes(void);
+  void SuppressDeleteEvent(void) {SuppressDelete = true;}
   const wxString& GetName(void) const {return Name;}
 
 
@@ -43,6 +44,7 @@ public:
 private:
   uMod_Frame *MainFrame;
   wxString Name;
+  bool SuppressDelete;
 };
 
 #endif /* uMod_CLIENT_H_ */

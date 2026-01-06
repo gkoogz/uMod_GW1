@@ -52,6 +52,7 @@ uMod_Client::uMod_Client( PipeStruct &pipe, uMod_Frame *frame, const wxString &n
   Pipe.Out = pipe.Out;
   MainFrame = frame;
   Name = name;
+  SuppressDelete = false;
 }
 
 uMod_Client::~uMod_Client(void)
@@ -114,9 +115,12 @@ void* uMod_Client::Entry(void)
   }
   ClosePipes();
 
-  uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
-  event.SetClient(this);
-  wxPostEvent( MainFrame, event);
+  if (!SuppressDelete)
+  {
+    uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
+    event.SetClient(this);
+    wxPostEvent( MainFrame, event);
+  }
 
   return NULL;
 }

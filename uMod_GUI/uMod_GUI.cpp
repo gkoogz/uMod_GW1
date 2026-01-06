@@ -262,6 +262,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
     {
       AppendGuiTrace("OnAddGame: replacing existing client");
       Notebook->DeletePage(i);
+      Clients[i]->SuppressDeleteEvent();
       Clients[i]->ClosePipes();
       Clients[i]->Wait();
       delete Clients[i];
