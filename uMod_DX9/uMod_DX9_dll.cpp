@@ -43,6 +43,31 @@ HANDLE                gl_ServerThread = NULL;
 HANDLE                gl_StartupThread = NULL;
 static wchar_t         gl_GameName[MAX_PATH];
 
+namespace
+{
+void AppendStartupTrace(const wchar_t *message)
+{
+  if (gl_hThisInstance == NULL || message == NULL) return;
+
+  wchar_t module_path[MAX_PATH];
+  DWORD len = GetModuleFileNameW(gl_hThisInstance, module_path, MAX_PATH);
+  if (len == 0 || len >= MAX_PATH) return;
+
+  wchar_t *last_slash = wcsrchr(module_path, L'\\');
+  if (last_slash != NULL) *(last_slash + 1) = 0;
+
+  wchar_t log_path[MAX_PATH];
+  _snwprintf_s(log_path, _countof(log_path), _TRUNCATE, L"%lsuMod_startup_trace.txt", module_path);
+
+  FILE *file = NULL;
+  if (_wfopen_s(&file, log_path, L"a, ccs=UTF-8") == 0 && file != NULL)
+  {
+    fwprintf(file, L"%ls\n", message);
+    fclose(file);
+  }
+}
+}
+
 typedef IDirect3D9 *(APIENTRY *Direct3DCreate9_type)(UINT);
 typedef HRESULT (APIENTRY *Direct3DCreate9Ex_type)(UINT SDKVersion, IDirect3D9Ex **ppD3D);
 
@@ -98,8 +123,10 @@ DWORD WINAPI ServerThread( LPVOID lpParam )
 DWORD WINAPI StartupThread( LPVOID lpParam )
 {
   UNREFERENCED_PARAMETER(lpParam);
+  AppendStartupTrace(L"StartupThread: begin");
   wchar_t game[MAX_PATH];
   if (!HookThisProgram(game)) return 0;
+  AppendStartupTrace(L"StartupThread: HookThisProgram ok");
   for (int i = 0; i < MAX_PATH; i++)
   {
     gl_GameName[i] = game[i];
@@ -108,16 +135,20 @@ DWORD WINAPI StartupThread( LPVOID lpParam )
 
   OpenMessage();
   Message("StartupThread: %lu\n", gl_hThisInstance);
+  AppendStartupTrace(L"StartupThread: OpenMessage ok");
 
   gl_TextureServer = new uMod_TextureServer(gl_GameName); //create the server which listen on the pipe and prepare the update for the texture clients
+  AppendStartupTrace(L"StartupThread: TextureServer created");
 
   LoadOriginalDll();
+  AppendStartupTrace(L"StartupThread: LoadOriginalDll ok");
 
   wchar_t no_detour[2];
   bool skip_detour = GetEnvironmentVariableW(L"UMOD_NO_DETOUR", no_detour, 2) > 0;
   if (skip_detour)
   {
     Message("StartupThread: UMOD_NO_DETOUR set, skipping detours\n");
+    AppendStartupTrace(L"StartupThread: UMOD_NO_DETOUR set");
   }
   else
   {
@@ -127,6 +158,7 @@ DWORD WINAPI StartupThread( LPVOID lpParam )
     {
       Message("Detour: Direct3DCreate9\n");
       Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
+      AppendStartupTrace(L"StartupThread: Detour Direct3DCreate9 ok");
     }
 
     Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
@@ -134,6 +166,7 @@ DWORD WINAPI StartupThread( LPVOID lpParam )
     {
       Message("Detour: Direct3DCreate9Ex\n");
       Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+      AppendStartupTrace(L"StartupThread: Detour Direct3DCreate9Ex ok");
     }
   }
 
@@ -142,6 +175,7 @@ DWORD WINAPI StartupThread( LPVOID lpParam )
   if (skip_pipe)
   {
     Message("StartupThread: UMOD_NO_PIPE set, skipping pipe connect\n");
+    AppendStartupTrace(L"StartupThread: UMOD_NO_PIPE set");
     return 0;
   }
 
@@ -149,11 +183,14 @@ DWORD WINAPI StartupThread( LPVOID lpParam )
   {
     DWORD error = GetLastError();
     Message("StartupThread: Pipe not opened (error %lu)\n", error);
+    AppendStartupTrace(L"StartupThread: OpenPipe failed");
     return 0;
   }
+  AppendStartupTrace(L"StartupThread: OpenPipe ok");
 
   gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
   if (gl_ServerThread==NULL) {Message("StartupThread: Serverthread not started\n");}
+  AppendStartupTrace(L"StartupThread: ServerThread started");
   return 0;
 }
 
