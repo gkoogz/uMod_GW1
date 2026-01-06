@@ -634,7 +634,7 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
   wxString log_path = dll_path.GetPathWithSep() + "uMod_injection.log";
   wxTextFile log_file;
-  if (log_file.Exists(log_path))
+  if (wxFileExists(log_path))
   {
     log_file.Open(log_path);
   }
