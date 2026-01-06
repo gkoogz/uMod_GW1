@@ -25,6 +25,51 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
  */
 
 #include "uMod_Main.h"
+#include <cstdarg>
+#include <cwchar>
+
+static void DIHostTrace(const wchar_t* message)
+{
+	wchar_t path[MAX_PATH] = L"uMod_DI_host.txt";
+	DWORD len = GetModuleFileNameW(NULL, path, MAX_PATH);
+	if (len > 0 && len < MAX_PATH)
+	{
+		wchar_t* slash = wcsrchr(path, L'\\');
+		if (slash != NULL)
+		{
+			slash[1] = L'\0';
+			wcscat_s(path, L"uMod_DI_host.txt");
+		}
+		else
+		{
+			wcscpy_s(path, L"uMod_DI_host.txt");
+		}
+	}
+
+	HANDLE file = CreateFileW(path, FILE_APPEND_DATA, FILE_SHARE_READ, NULL,
+		OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	if (file != INVALID_HANDLE_VALUE)
+	{
+		DWORD written = 0;
+		DWORD length = static_cast<DWORD>(lstrlenW(message));
+		WriteFile(file, message, length * sizeof(wchar_t), &written, NULL);
+		WriteFile(file, L"\r\n", 2 * sizeof(wchar_t), &written, NULL);
+		CloseHandle(file);
+	}
+
+	OutputDebugStringW(message);
+	OutputDebugStringW(L"\r\n");
+}
+
+static void DIHostTraceFormat(const wchar_t* format, ...)
+{
+	wchar_t buffer[512];
+	va_list args;
+	va_start(args, format);
+	_vsnwprintf_s(buffer, _countof(buffer), _TRUNCATE, format, args);
+	va_end(args);
+	DIHostTrace(buffer);
+}
 /***************************************************************************************************/
 //	Function: 
 //		Inject
@@ -51,6 +96,12 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 {
+	DIHostTraceFormat(L"Inject start: process=%p dll=%ls func=%S", hProcess, dllname, funcname);
+	if (hProcess == NULL)
+	{
+		DIHostTrace(L"Inject failed: NULL process handle");
+		return;
+	}
 //------------------------------------------//
 // Function variables.						//
 //------------------------------------------//
@@ -112,12 +163,22 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 
 	// Get the address of the main DLL
 	kernel32	= LoadLibraryW(L"kernel32.dll");
+	if (kernel32 == NULL)
+	{
+		DIHostTraceFormat(L"Inject failed: LoadLibraryW(kernel32.dll) err=%lu", GetLastError());
+		return;
+	}
 
 	// Get our functions
 	loadlibrary		= GetProcAddress(kernel32,	"LoadLibraryA");
 	getprocaddress	= GetProcAddress(kernel32,	"GetProcAddress");
 	exitthread		= GetProcAddress(kernel32,	"ExitThread");
 	freelibraryandexitthread = GetProcAddress(kernel32,	"FreeLibraryAndExitThread");
+	if (!loadlibrary || !getprocaddress || !exitthread || !freelibraryandexitthread)
+	{
+		DIHostTraceFormat(L"Inject failed: GetProcAddress err=%lu", GetLastError());
+		return;
+	}
 
 // This section will cause compiler warnings on VS8, 
 // you can upgrade the functions or ignore them
@@ -135,9 +196,20 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 
 	// Create the workspace
 	workspace = (LPBYTE)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 1024);
+	if (workspace == NULL)
+	{
+		DIHostTraceFormat(L"Inject failed: HeapAlloc err=%lu", GetLastError());
+		return;
+	}
 
 	// Allocate space for the codecave in the process
 	codecaveAddress = VirtualAllocEx(hProcess, 0, 1024, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (codecaveAddress == NULL)
+	{
+		DIHostTraceFormat(L"Inject failed: VirtualAllocEx err=%lu", GetLastError());
+		HeapFree(GetProcessHeap(), 0, workspace);
+		return;
+	}
 	dwCodecaveAddress = PtrToUlong(codecaveAddress);
 
 // Note there is no error checking done above for any functions that return a pointer/handle.
@@ -493,13 +565,28 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 //------------------------------------------//
 
 	// Change page protection so we can write executable code
-	VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, PAGE_EXECUTE_READWRITE, &oldProtect);
+	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, PAGE_EXECUTE_READWRITE, &oldProtect))
+	{
+		DIHostTraceFormat(L"Inject failed: VirtualProtectEx err=%lu", GetLastError());
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		HeapFree(GetProcessHeap(), 0, workspace);
+		return;
+	}
 
 	// Write out the patch
-	WriteProcessMemory(hProcess, codecaveAddress, workspace, workspaceIndex, &bytesRet);
+	if (!WriteProcessMemory(hProcess, codecaveAddress, workspace, workspaceIndex, &bytesRet))
+	{
+		DIHostTraceFormat(L"Inject failed: WriteProcessMemory err=%lu", GetLastError());
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		HeapFree(GetProcessHeap(), 0, workspace);
+		return;
+	}
 
 	// Restore page protection
-	VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect);
+	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect))
+	{
+		DIHostTraceFormat(L"Inject warning: restore VirtualProtectEx err=%lu", GetLastError());
+	}
 
 	// Make sure our changes are written right away
 	FlushInstructionCache(hProcess, codecaveAddress, workspaceIndex);
@@ -510,8 +597,23 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	// Execute the thread now and wait for it to exit, note we execute where the code starts, and not the codecave start
 	// (since we wrote strings at the start of the codecave) -- NOTE: void* used for VC6 compatibility instead of UlongToPtr
 	hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)((void*)codecaveExecAddr), 0, 0, NULL);
-	WaitForSingleObject(hThread, INFINITE); 
+	if (hThread == NULL)
+	{
+		DIHostTraceFormat(L"Inject failed: CreateRemoteThread err=%lu", GetLastError());
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		return;
+	}
+
+	DWORD waitResult = WaitForSingleObject(hThread, INFINITE);
+	if (waitResult == WAIT_FAILED)
+	{
+		DIHostTraceFormat(L"Inject warning: WaitForSingleObject err=%lu", GetLastError());
+	}
+	CloseHandle(hThread);
 
 	// Free the memory in the process that we allocated
-	VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+	if (!VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE))
+	{
+		DIHostTraceFormat(L"Inject warning: VirtualFreeEx err=%lu", GetLastError());
+	}
 }
