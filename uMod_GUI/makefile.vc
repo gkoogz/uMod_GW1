@@ -338,9 +338,11 @@ ____CAIRO_LIBDIR_FILENAMES_p = /LIBPATH:$(CAIRO_ROOT)\lib
 !endif
 
 
-all: $(OBJS)
+all: $(OBJS) $(OBJS_exe)
 $(OBJS):
 	-if not exist $(OBJS) mkdir $(OBJS)
+$(OBJS_exe):
+	-if not exist $(OBJS_exe) mkdir $(OBJS_exe)
 
 ### Targets: ###
 
@@ -354,7 +356,7 @@ clean:
 	-if exist $(OBJS_exe)\uMod_GUI.ilk del $(OBJS_exe)\uMod_GUI.ilk
 	-if exist $(OBJS_exe)\uMod_GUI.pdb del $(OBJS_exe)\uMod_GUI.pdb
 
-$(OBJS_exe)\uMod.exe: $(MINIMAL_OBJECTS) $(OBJS)\uMod_GUI.res
+$(OBJS_exe)\uMod.exe: $(OBJS_exe) $(MINIMAL_OBJECTS) $(OBJS)\uMod_GUI.res
 	link /NOLOGO /OUT:$@  $(__DEBUGINFO_1) /pdb:"$(OBJS)\uMod_GUI.pdb" $(__DEBUGINFO_2)  $(LINK_TARGET_CPU) /LIBPATH:$(LIBDIRNAME) /SUBSYSTEM:WINDOWS $(____CAIRO_LIBDIR_FILENAMES_p) $(LDFLAGS) @<<
 	$(MINIMAL_OBJECTS) $(MINIMAL_RESOURCES)  $(__WXLIB_CORE_p)  $(__WXLIB_BASE_p)  $(__WXLIB_MONO_p) $(__LIB_TIFF_p) $(__LIB_JPEG_p) $(__LIB_PNG_p)  wxzlib$(WXDEBUGFLAG).lib wxregex$(WXUNICODEFLAG)$(WXDEBUGFLAG).lib wxexpat$(WXDEBUGFLAG).lib $(EXTRALIBS_FOR_BASE) $(__UNICOWS_LIB_p) $(__CAIRO_LIB_p) kernel32.lib user32.lib gdi32.lib comdlg32.lib winspool.lib winmm.lib shell32.lib comctl32.lib ole32.lib oleaut32.lib uuid.lib rpcrt4.lib advapi32.lib wsock32.lib wininet.lib
 <<
