@@ -5,7 +5,7 @@ set ROOT_DIR=%~dp0
 
 echo Building uMod DX9 DLL...
 pushd "%ROOT_DIR%uMod_DX9"
-nmake -f makefile.vc
+nmake -f makefile.vc LOG_MESSAGE=1
 if errorlevel 1 (
   echo DX9 build failed.
   popd

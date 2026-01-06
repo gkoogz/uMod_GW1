@@ -127,7 +127,12 @@ void InitInstance(HINSTANCE hModule)
 
     if (gl_TextureServer->OpenPipe(game)) //open the pipe and send the name+path of this executable
     {
-      Message("InitInstance: Pipe not opened\n");
+      DWORD error = GetLastError();
+      wchar_t msg[256];
+      _snwprintf_s(msg, _countof(msg), _TRUNCATE,
+          L"uMod: failed to connect to GUI named pipes (error %lu).", error);
+      Message("InitInstance: Pipe not opened (error %lu)\n", error);
+      MessageBoxW(NULL, msg, L"uMod", MB_OK | MB_ICONERROR);
       return;
     }
 

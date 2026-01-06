@@ -705,6 +705,7 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
   // open first outgoing pipe !!
   const DWORD max_wait_ms = 5000;
   DWORD start = GetTickCount();
+  DWORD last_error = ERROR_SUCCESS;
   while (true)
   {
     Pipe.Out = CreateFileW(PIPE_Game2uMod, // pipe name
@@ -718,10 +719,16 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
     if (Pipe.Out != INVALID_HANDLE_VALUE) break;
 
     DWORD error = GetLastError();
+    last_error = error;
     if (error != ERROR_PIPE_BUSY && error != ERROR_FILE_NOT_FOUND) return (RETURN_PIPE_NOT_OPENED);
     if (!WaitNamedPipeW(PIPE_Game2uMod, 500))
     {
-      if (GetTickCount() - start >= max_wait_ms) return (RETURN_PIPE_NOT_OPENED);
+      last_error = GetLastError();
+      if (GetTickCount() - start >= max_wait_ms)
+      {
+        SetLastError(last_error);
+        return (RETURN_PIPE_NOT_OPENED);
+      }
     }
   }
 
@@ -748,10 +755,16 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
     if (Pipe.In != INVALID_HANDLE_VALUE) break;
 
     DWORD error = GetLastError();
+    last_error = error;
     if (error != ERROR_PIPE_BUSY && error != ERROR_FILE_NOT_FOUND) return (RETURN_PIPE_NOT_OPENED);
     if (!WaitNamedPipeW(PIPE_uMod2Game, 500))
     {
-      if (GetTickCount() - start >= max_wait_ms) return (RETURN_PIPE_NOT_OPENED);
+      last_error = GetLastError();
+      if (GetTickCount() - start >= max_wait_ms)
+      {
+        SetLastError(last_error);
+        return (RETURN_PIPE_NOT_OPENED);
+      }
     }
   }
 
