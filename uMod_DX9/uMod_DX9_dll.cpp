@@ -115,6 +115,7 @@ FILE*                 gl_File = NULL;
 void Nothing(void)
 {
 #ifdef DIRECT_INJECTION
+  DITrace(L"Nothing: invoked");
   if (!g_InitDone)
   {
     g_InitDone = true;
@@ -170,6 +171,15 @@ void InitInstance(HINSTANCE hModule)
   DisableThreadLibraryCalls( hModule ); //reduce overhead
 
   gl_hThisInstance = (HINSTANCE)  hModule;
+
+#ifdef DIRECT_INJECTION
+  HINSTANCE pinned = NULL;
+  if (GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN | GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS,
+                         reinterpret_cast<LPCWSTR>(&InitInstance), &pinned))
+  {
+    DITraceFormat(L"InitInstance: pinned module %p", pinned);
+  }
+#endif
 
   wchar_t game[MAX_PATH];
   if (HookThisProgram( game)) //ask if we need to hook this program
