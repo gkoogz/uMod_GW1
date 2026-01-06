@@ -74,6 +74,7 @@ private:
   bool BoolSaveAllTextures;
   bool BoolSaveSingleTexture;
   wchar_t SavePath[MAX_PATH];
+  wchar_t GamePath[MAX_PATH];
   wchar_t GameName[MAX_PATH];
 
   int PropagateUpdate(uMod_TextureClient* client=NULL); // called from Mainloop() if texture are loaded or removed

@@ -57,6 +57,12 @@ uMod_TextureServer::uMod_TextureServer(wchar_t *game)
   FontColour = 0u;
   TextureColour = 0u;
 
+  for (int i = 0; i < MAX_PATH; i++)
+  {
+    GamePath[i] = game[i];
+    if (game[i] == 0) break;
+  }
+
   Pipe.In = INVALID_HANDLE_VALUE;
   Pipe.Out = INVALID_HANDLE_VALUE;
 }
@@ -690,6 +696,16 @@ int uMod_TextureServer::MainLoop(void) // run as a separated thread
     {
       DWORD error = GetLastError();
       Message("MainLoop: error in ReadFile() (error %lu)\n", error);
+      if (error == ERROR_BROKEN_PIPE)
+      {
+        Message("MainLoop: broken pipe, reopening\n");
+        ClosePipe();
+        if (OpenPipe(GamePath) == RETURN_OK)
+        {
+          Message("MainLoop: pipe reopened\n");
+          continue;
+        }
+      }
       delete [] buffer;
       ClosePipe();
       return (RETURN_OK);
