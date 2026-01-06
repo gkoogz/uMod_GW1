@@ -738,34 +738,15 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
 {
   Message("OpenPipe: Out\n")
   // open first outgoing pipe !!
-  const DWORD max_wait_ms = 5000;
-  DWORD start = GetTickCount();
-  DWORD last_error = ERROR_SUCCESS;
-  while (true)
-  {
-    Pipe.Out = CreateFileW(PIPE_Game2uMod, // pipe name
-        GENERIC_WRITE, // write access
-        0, // no sharing
-        NULL, // default security attributes
-        OPEN_EXISTING, // opens existing pipe
-        0, // default attributes
-        NULL); // no template file
+  Pipe.Out = CreateFileW(PIPE_Game2uMod, // pipe name
+      GENERIC_WRITE, // write access
+      0, // no sharing
+      NULL, // default security attributes
+      OPEN_EXISTING, // opens existing pipe
+      0, // default attributes
+      NULL); // no template file
 
-    if (Pipe.Out != INVALID_HANDLE_VALUE) break;
-
-    DWORD error = GetLastError();
-    last_error = error;
-    if (error != ERROR_PIPE_BUSY && error != ERROR_FILE_NOT_FOUND) return (RETURN_PIPE_NOT_OPENED);
-    if (!WaitNamedPipeW(PIPE_Game2uMod, 500))
-    {
-      last_error = GetLastError();
-      if (GetTickCount() - start >= max_wait_ms)
-      {
-        SetLastError(last_error);
-        return (RETURN_PIPE_NOT_OPENED);
-      }
-    }
-  }
+  if (Pipe.Out == INVALID_HANDLE_VALUE) return (RETURN_PIPE_NOT_OPENED);
 
   unsigned int len = 0u;
   while (game[len]) len++;
@@ -776,32 +757,13 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
 
   // now we can open the pipe for reading
   Message("OpenPipe: In\n");
-  start = GetTickCount();
-  while (true)
-  {
-    Pipe.In = CreateFileW(PIPE_uMod2Game, // pipe name
-        GENERIC_READ, // read access
-        0, // no sharing
-        NULL, // default security attributes
-        OPEN_EXISTING, // opens existing pipe
-        0, // default attributes
-        NULL); // no template file
-
-    if (Pipe.In != INVALID_HANDLE_VALUE) break;
-
-    DWORD error = GetLastError();
-    last_error = error;
-    if (error != ERROR_PIPE_BUSY && error != ERROR_FILE_NOT_FOUND) return (RETURN_PIPE_NOT_OPENED);
-    if (!WaitNamedPipeW(PIPE_uMod2Game, 500))
-    {
-      last_error = GetLastError();
-      if (GetTickCount() - start >= max_wait_ms)
-      {
-        SetLastError(last_error);
-        return (RETURN_PIPE_NOT_OPENED);
-      }
-    }
-  }
+  Pipe.In = CreateFileW(PIPE_uMod2Game, // pipe name
+      GENERIC_READ, // read access
+      0, // no sharing
+      NULL, // default security attributes
+      OPEN_EXISTING, // opens existing pipe
+      0, // default attributes
+      NULL); // no template file
 
   if (Pipe.In == INVALID_HANDLE_VALUE)
   {
