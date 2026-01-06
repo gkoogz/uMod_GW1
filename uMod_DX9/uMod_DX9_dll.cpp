@@ -145,7 +145,7 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	case DLL_PROCESS_DETACH:
 	{
 #ifdef DIRECT_INJECTION
-	  DITraceFormat(L"DllMain detach: %p", hModule);
+	  DITraceFormat(L"DllMain detach: %p (reserved=%p)", hModule, lpReserved);
 #else
 	  ExitInstance();
 #endif
@@ -319,7 +319,7 @@ IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
     pIDirect3D9_orig = Direct3DCreate9_fn(SDKVersion); //creating the original IDirect3D9 object
   }
   else return (NULL);
-  uMod_IDirect3D9 *pIDirect3D9;
+  uMod_IDirect3D9 *pIDirect3D9 = NULL;
   if (pIDirect3D9_orig)
   {
     pIDirect3D9 = new uMod_IDirect3D9( pIDirect3D9_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
@@ -333,6 +333,9 @@ IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
     Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*) Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex,7);
   }
 */
+#ifdef DIRECT_INJECTION
+  DITraceFormat(L"uMod_Direct3DCreate9: return %p (server=%p)", pIDirect3D9, gl_TextureServer);
+#endif
   return (pIDirect3D9); //return our object instead of the "real one"
 }
 
@@ -370,7 +373,7 @@ HRESULT APIENTRY uMod_Direct3DCreate9Ex( UINT SDKVersion, IDirect3D9Ex **ppD3D)
 
   if (ret!=S_OK) return (ret);
 
-  uMod_IDirect3D9Ex *pIDirect3D9Ex;
+  uMod_IDirect3D9Ex *pIDirect3D9Ex = NULL;
   if (pIDirect3D9Ex_orig)
   {
     pIDirect3D9Ex = new uMod_IDirect3D9Ex( pIDirect3D9Ex_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
@@ -385,6 +388,9 @@ HRESULT APIENTRY uMod_Direct3DCreate9Ex( UINT SDKVersion, IDirect3D9Ex **ppD3D)
   */
   Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*) Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex,7);
   ppD3D = (IDirect3D9Ex**) &pIDirect3D9Ex; //return our object instead of the "real one"
+#ifdef DIRECT_INJECTION
+  DITraceFormat(L"uMod_Direct3DCreate9Ex: return %p (server=%p)", pIDirect3D9Ex, gl_TextureServer);
+#endif
   return (ret);
 }
 
