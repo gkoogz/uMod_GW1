@@ -27,7 +27,6 @@ uMod_Settings::uMod_Settings(void)
   YSize = 400;
   XPos = -1;
   YPos = -1;
-  UseHook = false;
   Language = "English";
 }
 
@@ -37,7 +36,6 @@ uMod_Settings::uMod_Settings(uMod_Settings &set)
   YSize = set.YSize;
   XPos = set.XPos;
   YPos = set.YPos;
-  UseHook = set.UseHook;
   Language = set.Language;
 }
 
@@ -78,7 +76,6 @@ int uMod_Settings::Load(void)
   wxString command;
   wxString value;
 
-  UseHook = false;
   for (int i=0; i<num; i++)
   {
     line = token.GetNextToken();
@@ -106,15 +103,6 @@ int uMod_Settings::Load(void)
     {
       long y;
       if (value.ToLong( &y)) YPos=y;
-    }
-    else if (command == "UseHook")
-    {
-      long use;
-      if (value.ToLong( &use))
-      {
-        if (use) UseHook = true;
-        else UseHook = false;
-      }
     }
   }
 
@@ -145,13 +133,8 @@ int uMod_Settings::Save(void)
   content.Printf("y_pos:%d\n", YPos);
   file.Write( content.wc_str(), content.Len()*2);
 
-  if (UseHook) content = "UseHook:1\n";
-  else content = "UseHook:0\n";
-  file.Write( content.wc_str(), content.Len()*2);
-
   file.Close();
 
   return 0;
 }
-
 

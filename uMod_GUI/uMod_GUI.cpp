@@ -47,10 +47,6 @@ BEGIN_EVENT_TABLE(uMod_Frame, wxFrame)
   EVT_MENU(ID_Menu_StartGame, uMod_Frame::OnMenuStartGame)
   EVT_MENU(ID_Menu_StartGameCMD, uMod_Frame::OnMenuStartGame)
 
-  EVT_MENU(ID_Menu_AddGame, uMod_Frame::OnMenuAddGame)
-  EVT_MENU(ID_Menu_DeleteGame, uMod_Frame::OnMenuDeleteGame)
-  EVT_MENU(ID_Menu_UseHook, uMod_Frame::OnMenuUseHook)
-
   EVT_MENU(ID_Menu_LoadTemplate, uMod_Frame::OnMenuOpenTemplate)
   EVT_MENU(ID_Menu_SaveTemplate, uMod_Frame::OnMenuSaveTemplate)
   EVT_MENU(ID_Menu_SaveTemplateAs, uMod_Frame::OnMenuSaveTemplateAs)
@@ -95,7 +91,6 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
        : wxFrame((wxFrame *)NULL, -1, title, wxPoint(set.XPos,set.YPos), wxSize(set.XSize,set.YSize)), Settings(set)
 {
   SetIcon(wxICON(MAINICON));
-  H_DX9_DLL = NULL;
 
   Server = new uMod_Server( this);
   Server->Create();
@@ -110,12 +105,6 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   MenuMain->Append ( ID_Menu_StartGameCMD, Language->MenuStartGameCMD);
   MenuMain->AppendSeparator();
 
-  MenuMain->Append( ID_Menu_AddGame, Language->MenuAddGame );
-  MenuMain->Append( ID_Menu_DeleteGame, Language->MenuDeleteGame );
-  MenuMain->AppendCheckItem ( ID_Menu_UseHook, Language->MenuUseHook);
-  MenuMain->Check( ID_Menu_UseHook, Settings.UseHook);
-
-  MenuMain->AppendSeparator();
   MenuMain->Append( ID_Menu_LoadTemplate, Language->MenuLoadTemplate );
   MenuMain->Append( ID_Menu_SaveTemplate, Language->MenuSaveTemplate );
   MenuMain->Append( ID_Menu_SaveTemplateAs, Language->MenuSaveTemplateAs );
@@ -176,7 +165,6 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
     else FreeLibrary(dll);
   }
 
-  if (Settings.UseHook) InstallHook();
   DeactivateGamesControl();
 }
 
@@ -189,8 +177,6 @@ uMod_Frame::~uMod_Frame(void)
     delete Server;
     Server = NULL;
   }
-
-  RemoveHook();
 
   if (Clients!=NULL) delete [] Clients;
 
@@ -470,10 +456,6 @@ void uMod_Frame::OnMenuLanguage(wxCommandEvent& WXUNUSED(event))
     MenuMain->SetLabel( ID_Menu_StartGame, Language->MenuStartGame);
     MenuMain->SetLabel( ID_Menu_StartGameCMD, Language->MenuStartGameCMD);
 
-    MenuMain->SetLabel( ID_Menu_AddGame, Language->MenuAddGame);
-    MenuMain->SetLabel( ID_Menu_DeleteGame, Language->MenuDeleteGame);
-    MenuMain->SetLabel( ID_Menu_UseHook, Language->MenuUseHook);
-
     MenuMain->SetLabel( ID_Menu_LoadTemplate, Language->MenuLoadTemplate );
     MenuMain->SetLabel( ID_Menu_SaveTemplate, Language->MenuSaveTemplate );
     MenuMain->SetLabel( ID_Menu_SaveTemplateAs, Language->MenuSaveTemplateAs );
@@ -583,19 +565,6 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
   SetInjectedGames( games, cmd);
 
-  if (Settings.UseHook)
-  {
-    wxArrayString array;
-    if (GetHookedGames( array)) array.Empty();
-
-    int num = array.GetCount();
-    for (int i=0; i<num; i++) if (array[i] == games[index])
-    {
-      wxMessageBox(Language->Error_GameIsHooked, "ERROR", wxOK|wxICON_ERROR);
-      return;
-    }
-  }
-
   STARTUPINFOW si = {0};
   si.cb = sizeof(STARTUPINFO);
   PROCESS_INFORMATION pi = {0};
@@ -623,79 +592,6 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
   ResumeThread(pi.hThread);
 }
 
-void uMod_Frame::OnMenuUseHook(wxCommandEvent& WXUNUSED(event))
-{
-  bool use_hook = MenuMain->IsChecked(ID_Menu_UseHook);
-
-  if (Settings.UseHook!=use_hook)
-  {
-    if (Settings.UseHook)
-    {
-      if (NumberOfGames>0)
-      {
-        MenuMain->Check(ID_Menu_UseHook, true);
-        wxMessageBox(Language->Error_RemoveHook, "ERROR", wxOK|wxICON_ERROR);
-        return;
-      }
-      RemoveHook();
-    }
-    else
-    {
-      InstallHook();
-    }
-    Settings.UseHook=use_hook;
-  }
-}
-
-void uMod_Frame::OnMenuAddGame(wxCommandEvent& WXUNUSED(event))
-{
-  wxString file_name = wxFileSelector( Language->ChooseGame, "", "", "exe",  "binary (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
-  if ( !file_name.empty() )
-  {
-    wxArrayString array;
-    if (GetHookedGames( array)) array.Empty();
-
-    int num = array.GetCount();
-    for (int i=0; i<num; i++) if (array[i] == file_name)
-    {
-      wxMessageBox(Language->GameAlreadyAdded, "ERROR", wxOK|wxICON_ERROR);
-      return;
-    }
-    array.Add(file_name);
-    if (SetHookedGames( array))
-    {
-      wxMessageBox( LastError, "ERROR", wxOK|wxICON_ERROR);
-      LastError.Empty();
-      return;
-    }
-  }
-}
-
-void uMod_Frame::OnMenuDeleteGame(wxCommandEvent& WXUNUSED(event))
-{
-  wxArrayInt selections;
-  wxArrayString array;
-  if (GetHookedGames( array))
-  {
-    wxMessageBox( LastError, "ERROR", wxOK|wxICON_ERROR);
-    LastError.Empty();
-    return;
-  }
-  wxGetSelectedChoices( selections, Language->DeleteGame, Language->DeleteGame, array);
-
-  int num = selections.GetCount();
-  for (int i=0; i<num; i++)
-  {
-    array.RemoveAt( selections[i]-i); //this will work only if selections is sorted !!
-  }
-
-  if (SetHookedGames( array))
-  {
-    wxMessageBox( LastError, "ERROR", wxOK|wxICON_ERROR);
-    LastError.Empty();
-    return;
-  }
-}
 
 
 int uMod_Frame::ActivateGamesControl(void)
@@ -726,77 +622,6 @@ int uMod_Frame::DeactivateGamesControl(void)
   DirectoryButton->Enable( false);
   UpdateButton->Enable( false);
   ReloadButton->Enable( false);
-  return 0;
-}
-
-int uMod_Frame::GetHookedGames( wxArrayString &array)
-{
-  wxFile file;
-  wxString name;
-  wchar_t *app_path = _wgetenv( L"APPDATA");
-  name.Printf("%ls\\%ls\\%ls", app_path, uMod_APP_DIR, uMod_APP_DX9);
-
-  if (!file.Access(name, wxFile::read)) {LastError << Language->Error_FileOpen << "\n" << name; return -1;}
-  file.Open(name, wxFile::read);
-  if (!file.IsOpened()) {LastError << Language->Error_FileOpen << "\n" << name ; return -1;}
-
-  unsigned len = file.Length();
-
-  unsigned char* buffer;
-  try {buffer = new unsigned char [len+2];}
-  catch (...) {LastError << Language->Error_Memory; return -1;}
-
-  unsigned int result = file.Read( buffer, len);
-  file.Close();
-
-  if (result != len) {delete [] buffer; LastError << Language->Error_FileRead<<"\n" << name; return -1;}
-
-  wchar_t *buff = (wchar_t*)buffer;
-  len/=2;
-  buff[len]=0;
-
-  wxString content;
-  content =  buff;
-  delete [] buffer;
-
-  wxStringTokenizer token( content, "\n");
-
-  int num = token.CountTokens();
-
-  array.Empty();
-
-  for (int i=0; i<num; i++)
-  {
-    array.Add( token.GetNextToken());
-  }
-  return 0;
-}
-
-int uMod_Frame::SetHookedGames( const wxArrayString &array)
-{
-  wxFile file;
-  wxString name;
-  wchar_t *app_path = _wgetenv( L"APPDATA");
-  name.Printf("%ls\\%ls", app_path, uMod_APP_DIR);
-
-  if (!wxDir::Exists(name))
-  {
-    wxFileName::Mkdir(name, 0777, wxPATH_MKDIR_FULL);
-  }
-
-  name.Printf("%ls\\%ls\\%ls", app_path, uMod_APP_DIR, uMod_APP_DX9);
-  file.Open(name, wxFile::write);
-  if (!file.IsOpened()) {LastError << Language->Error_FileOpen << "\n" << name ; return -1;}
-  wxString content;
-
-  int num = array.GetCount();
-  for (int i=0; i<num; i++)
-  {
-    content = array[i];
-    content << "\n";
-    file.Write( content.wc_str(), content.Len()*2);
-  }
-  file.Close();
   return 0;
 }
 
@@ -935,54 +760,4 @@ int uMod_Frame::SaveTemplate(void)
   }
   file.Close();
   return 0;
-}
-
-
-
-void uMod_Frame::InstallHook(void)
-{
-  if (H_DX9_DLL==NULL)
-  {
-    H_DX9_DLL = LoadLibraryW(uMod_d3d9_Hook_dll);
-    if (H_DX9_DLL!=NULL)
-    {
-      typedef void (*fkt_typ)(void);
-      fkt_typ install_hook = (fkt_typ) GetProcAddress( H_DX9_DLL, "InstallHook");
-      if (install_hook!=NULL) install_hook();
-      else
-      {
-        DWORD error = GetLastError();
-        wchar_t *error_msg;
-        FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-              NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &error_msg, 0, NULL );
-        wxString temp = Language->Error_DLLNotFound;
-        temp << "\n" << uMod_d3d9_Hook_dll;
-        temp << "\n" << error_msg << "Code: " << error;
-        wxMessageBox( temp, "ERROR", wxOK);
-      }
-    }
-    else
-    {
-      DWORD error = GetLastError();
-      wchar_t *error_msg;
-      FormatMessage( FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &error_msg, 0, NULL );
-      wxString temp = Language->Error_DLLNotFound;
-      temp << "\n" << uMod_d3d9_Hook_dll;
-      temp << "\n" << error_msg << "Code: " << error;
-      wxMessageBox(temp, "ERROR", wxOK|wxICON_ERROR);
-    }
-  }
-}
-
-void uMod_Frame::RemoveHook(void)
-{
-  if (H_DX9_DLL!=NULL)
-  {
-    typedef void (*fkt_typ)(void);
-    fkt_typ remove_hook = (fkt_typ) GetProcAddress( H_DX9_DLL, "RemoveHook");
-    if (remove_hook!=NULL) remove_hook();
-    FreeLibrary(H_DX9_DLL);
-  }
-  H_DX9_DLL = NULL;
 }

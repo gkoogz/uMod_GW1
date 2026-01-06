@@ -45,10 +45,6 @@ public:
 
   void OnMenuStartGame( wxCommandEvent &event);
 
-  void OnMenuUseHook( wxCommandEvent &event);
-  void OnMenuAddGame(wxCommandEvent& WXUNUSED(event));
-  void OnMenuDeleteGame(wxCommandEvent& WXUNUSED(event));
-
   void OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event));
   void OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event));
   void OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event));
@@ -68,8 +64,6 @@ private:
 
   uMod_Settings Settings;
   int KillServer(void);
-  int GetHookedGames( wxArrayString &array);
-  int SetHookedGames( const wxArrayString &array);
 
   int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
   int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
@@ -101,12 +95,6 @@ private:
   int SaveTemplate(void);
   wxArrayString SaveFile_Exe;
   wxArrayString SaveFile_Name;
-
-
-  void InstallHook(void);
-  void RemoveHook(void);
-
-  HMODULE H_DX9_DLL;
 
   wxString LastError;
 
