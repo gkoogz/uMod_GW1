@@ -113,19 +113,36 @@ DWORD WINAPI StartupThread( LPVOID lpParam )
 
   LoadOriginalDll();
 
-  // we detour the original Direct3DCreate9 to our MyDirect3DCreate9
-  Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9");
-  if (Direct3DCreate9_fn!=NULL)
+  wchar_t no_detour[2];
+  bool skip_detour = GetEnvironmentVariableW(L"UMOD_NO_DETOUR", no_detour, 2) > 0;
+  if (skip_detour)
   {
-    Message("Detour: Direct3DCreate9\n");
-    Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
+    Message("StartupThread: UMOD_NO_DETOUR set, skipping detours\n");
+  }
+  else
+  {
+    // we detour the original Direct3DCreate9 to our MyDirect3DCreate9
+    Direct3DCreate9_fn = (Direct3DCreate9_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9");
+    if (Direct3DCreate9_fn!=NULL)
+    {
+      Message("Detour: Direct3DCreate9\n");
+      Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
+    }
+
+    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
+    if (Direct3DCreate9Ex_fn!=NULL)
+    {
+      Message("Detour: Direct3DCreate9Ex\n");
+      Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+    }
   }
 
-  Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
-  if (Direct3DCreate9Ex_fn!=NULL)
+  wchar_t no_pipe[2];
+  bool skip_pipe = GetEnvironmentVariableW(L"UMOD_NO_PIPE", no_pipe, 2) > 0;
+  if (skip_pipe)
   {
-    Message("Detour: Direct3DCreate9Ex\n");
-    Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+    Message("StartupThread: UMOD_NO_PIPE set, skipping pipe connect\n");
+    return 0;
   }
 
   if (gl_TextureServer->OpenPipe(gl_GameName)) //open the pipe and send the name+path of this executable
