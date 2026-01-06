@@ -188,9 +188,6 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, MenuAcknowledgement)
     CheckEntry( command, msg, MenuStartGame)
     CheckEntry( command, msg, MenuStartGameCMD)
-    CheckEntry( command, msg, MenuUseHook)
-    CheckEntry( command, msg, MenuAddGame)
-    CheckEntry( command, msg, MenuDeleteGame)
     CheckEntry( command, msg, MenuLoadTemplate)
     CheckEntry( command, msg, MenuSaveTemplate)
     CheckEntry( command, msg, MenuSaveTemplateAs)
@@ -212,14 +209,10 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, StartGame)
     CheckEntry( command, msg, CommandLine)
     CheckEntry( command, msg, ChooseGame)
-    CheckEntry( command, msg, DeleteGame)
-    CheckEntry( command, msg, GameAlreadyAdded)
     CheckEntry( command, msg, ExitGameAnyway)
     CheckEntry( command, msg, NoComment)
     CheckEntry( command, msg, Author)
-    CheckEntry( command, msg, Error_GameIsHooked)
     CheckEntry( command, msg, Error_ProcessNotStarted)
-    CheckEntry( command, msg, Error_RemoveHook)
     CheckEntry( command, msg, Error_FileNotSupported)
     CheckEntry( command, msg, Error_FktNotFound)
     CheckEntry( command, msg, Error_D3DX9NotFound)
@@ -265,9 +258,6 @@ int uMod_Language::LoadDefault(void)
   MenuStartGame = "Start game through uMod";
   MenuStartGameCMD = "Start game through uMod (with command line)";
 
-  MenuUseHook = "Use global hook";
-  MenuAddGame = "Add game";
-  MenuDeleteGame = "Delete game";
   MenuLoadTemplate = "Load template";
   MenuSaveTemplate = "Save template";
   MenuSaveTemplateAs = "Save template as ...";
@@ -296,15 +286,11 @@ int uMod_Language::LoadDefault(void)
   CommandLine = "Set command line arguments.";
 
   ChooseGame = "Select a game binary.";
-  DeleteGame = "Select the games to be deleted.";
-  GameAlreadyAdded = "Game has been already added.";
   ExitGameAnyway = "Closing OpenTexMod while a game is running might lead to a crash of the game.\nExit anyway?";
   NoComment = "No comment.";
   Author = "Author: ";
 
-  Error_GameIsHooked = "The global hook is active and this game will be injected! Please delete the game from the list or disable the hook.";
   Error_ProcessNotStarted = "The game could not be started.";
-  Error_RemoveHook = "Removing the Hook while a game is running might lead to crash.";
 
   Error_FileNotSupported = "This file type is not supported:\n";
   Error_D3DX9NotFound = "The D3DX9_43.dll (32bit) is not available on your system.\nPlease install the newest DirectX End-User Runtime Installer.";
@@ -724,4 +710,3 @@ int uMod_Language::LoadKeys(void)
  */
   return 0;
 }
-

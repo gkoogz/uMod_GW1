@@ -32,7 +32,6 @@ public:
 
   int XSize, YSize;
   int XPos, YPos;
-  bool UseHook;
   wxString Language;
 
   int Load(void);

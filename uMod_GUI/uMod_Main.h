@@ -89,9 +89,6 @@ enum
   ID_Menu_Acknowledgement,
   ID_Menu_StartGame,
   ID_Menu_StartGameCMD,
-  ID_Menu_UseHook,
-  ID_Menu_AddGame,
-  ID_Menu_DeleteGame,
   ID_Menu_LoadTemplate,
   ID_Menu_SaveTemplate,
   ID_Menu_SaveTemplateAs,
@@ -102,7 +99,6 @@ enum
 };
 
 #define ABORT_SERVER L"uMod_Abort_Server"
-#define uMod_d3d9_Hook_dll L"uMod_d3d9_HI.dll"
 #define uMod_d3d9_DI_dll L"uMod_d3d9_DI.dll"
 
 #include "uMod_AddTexture.h"
