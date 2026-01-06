@@ -19,6 +19,32 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
+
+namespace
+{
+void AppendGuiTrace(const wxString& message)
+{
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  wxString log_path = exe_path.GetPathWithSep() + "uMod_gui_trace.txt";
+  wxFile file;
+  if (wxFile::Exists(log_path))
+  {
+    file.Open(log_path, wxFile::write_append);
+  }
+  else
+  {
+    file.Open(log_path, wxFile::write);
+  }
+  if (file.IsOpened())
+  {
+    wxString line = message + "\n";
+    file.Write(line);
+    file.Close();
+  }
+}
+}
 
 uMod_Client::uMod_Client( PipeStruct &pipe, uMod_Frame *frame) : wxThread(wxTHREAD_JOINABLE)
 {
@@ -29,12 +55,6 @@ uMod_Client::uMod_Client( PipeStruct &pipe, uMod_Frame *frame) : wxThread(wxTHRE
 
 uMod_Client::~uMod_Client(void)
 {
-  if (Pipe.Out != INVALID_HANDLE_VALUE)
-  {
-    DisconnectNamedPipe(Pipe.Out);
-    CloseHandle(Pipe.Out);
-    Pipe.Out = INVALID_HANDLE_VALUE;
-  }
   if (Pipe.In != INVALID_HANDLE_VALUE)
   {
     DisconnectNamedPipe(Pipe.In);
@@ -76,13 +96,12 @@ void* uMod_Client::Entry(void)
     }
     else
     {
+      AppendGuiTrace(wxString::Format("Client: ReadFile failed (error=%lu)", GetLastError()));
       break;
     }
   }
   CloseHandle(Pipe.In);
   Pipe.In = INVALID_HANDLE_VALUE;
-  CloseHandle(Pipe.Out);
-  Pipe.Out = INVALID_HANDLE_VALUE;
 
   uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
   event.SetClient(this);
@@ -90,4 +109,3 @@ void* uMod_Client::Entry(void)
 
   return NULL;
 }
-

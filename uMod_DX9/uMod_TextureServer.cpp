@@ -688,7 +688,8 @@ int uMod_TextureServer::MainLoop(void) // run as a separated thread
     }
     else
     {
-      Message("MainLoop: error in ReadFile()\n");
+      DWORD error = GetLastError();
+      Message("MainLoop: error in ReadFile() (error %lu)\n", error);
       delete [] buffer;
       ClosePipe();
       return (RETURN_OK);
