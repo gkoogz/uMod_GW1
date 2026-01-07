@@ -74,7 +74,7 @@ bool MyApp::OnInit(void)
   uMod_Settings set;
   set.Load();
 
-  Language = new uMod_Language(set.Language);
+  Language = new uMod_Language("English");
   CheckForSingleRun = CreateMutex( NULL, true, L"Global\\uMod_CheckForSingleRun");
   if (ERROR_ALREADY_EXISTS == GetLastError())
   {
