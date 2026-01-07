@@ -74,17 +74,11 @@ private:
   PipeStruct ActivePipe;
 
 
-  wxButton *DirectoryButton;
-  wxButton *UpdateButton;
-  wxButton *ReloadButton;
-
-
   wxMenuBar *MenuBar;
   wxMenu *MenuMain;
   wxMenu *MenuHelp;
 
   wxBoxSizer *MainSizer;
-  wxBoxSizer *ButtonSizer;
 
 
   int NumberOfGames;

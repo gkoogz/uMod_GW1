@@ -40,6 +40,7 @@ public:
   int LoadLauncherSettings(void);
   void SetGameInfo( const wxString &exe, const wxString &save);
   void EnableOpenButton( bool enable);
+  void EnableGameControls( bool enable);
 
   wxString GetExeName(void) {return ExeName;}
   wxString GetTemplateName(void) {return TemplateName;}
@@ -101,6 +102,10 @@ private:
   wxTextCtrl *ExePath;
   wxStaticText *ExeStatus;
   wxButton *OpenButton;
+  wxStaticText *OpenButtonHint;
+  wxButton *DirectoryButton;
+  wxButton *UpdateButton;
+  wxButton *ReloadButton;
 
   wxTextCtrl *TemplateFile;
   wxCheckBox *SaveAllTextures;

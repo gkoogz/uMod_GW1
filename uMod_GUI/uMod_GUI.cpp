@@ -131,17 +131,6 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   GamePage = new uMod_GamePage( this, "", "", ActivePipe, this);
   MainSizer->Add( (wxWindow*) GamePage, 1, wxEXPAND , 0 );
 
-  ButtonSizer = new wxBoxSizer(wxHORIZONTAL);
-
-  DirectoryButton = new wxButton( this, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(100,24));
-  UpdateButton = new wxButton( this, ID_Button_Update, Language->ButtonUpdate, wxDefaultPosition, wxSize(100,24));
-  ReloadButton = new wxButton( this, ID_Button_Reload, Language->ButtonReload, wxDefaultPosition, wxSize(100,24));
-
-  ButtonSizer->Add( (wxWindow*) DirectoryButton, 1, wxEXPAND, 0);
-  ButtonSizer->Add( (wxWindow*) UpdateButton, 1, wxEXPAND, 0);
-  ButtonSizer->Add( (wxWindow*) ReloadButton, 1, wxEXPAND, 0);
-  MainSizer->Add( ButtonSizer, 0, wxEXPAND , 0 );
-
 
   SetSizer( MainSizer);
 
@@ -453,10 +442,6 @@ void uMod_Frame::OnMenuLanguage(wxCommandEvent& WXUNUSED(event))
     MenuHelp->SetLabel( ID_Menu_Acknowledgement, Language->MenuAcknowledgement);
 
 
-    DirectoryButton->SetLabel( Language->ButtonDirectory);
-    UpdateButton->SetLabel( Language->ButtonUpdate);
-    ReloadButton->SetLabel( Language->ButtonReload);
-
     GamePage->UpdateLanguage();
   }
 }
@@ -586,10 +571,7 @@ int uMod_Frame::ActivateGamesControl(void)
   MenuMain->Enable( ID_Menu_SetDefaultTemplate, true);
 
 
-  DirectoryButton->Enable( true);
-  UpdateButton->Enable( true);
-  ReloadButton->Enable( true);
-  if (GamePage!=NULL) GamePage->EnableOpenButton( true);
+  if (GamePage!=NULL) GamePage->EnableGameControls( true);
 
   return 0;
 }
@@ -602,10 +584,7 @@ int uMod_Frame::DeactivateGamesControl(void)
   MenuMain->Enable( ID_Menu_SetDefaultTemplate, false);
 
 
-  DirectoryButton->Enable( false);
-  UpdateButton->Enable( false);
-  ReloadButton->Enable( false);
-  if (GamePage!=NULL) GamePage->EnableOpenButton( false);
+  if (GamePage!=NULL) GamePage->EnableGameControls( false);
   return 0;
 }
 

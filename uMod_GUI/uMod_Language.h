@@ -54,6 +54,7 @@ public:
   wxString ButtonReload;
   wxString ButtonLaunch;
   wxString ButtonLocateExe;
+  wxString SelectModsHint;
 
   wxString ChooseFile;
   wxString ChooseDir;

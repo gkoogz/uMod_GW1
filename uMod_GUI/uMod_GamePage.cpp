@@ -71,6 +71,10 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
 
   OpenButton = new wxButton( LauncherPanel, ID_Button_Open, Language->ButtonOpen, wxDefaultPosition, wxSize(200,24));
   LauncherSizer->Add( (wxWindow*) OpenButton, 0, wxEXPAND, 0);
+  OpenButtonHint = new wxStaticText( LauncherPanel, wxID_ANY, Language->SelectModsHint);
+  OpenButtonHint->SetForegroundColour(wxColour(120, 120, 120));
+  LauncherSizer->Add( (wxWindow*) OpenButtonHint, 0, wxTOP, 4);
+  OpenButtonHint->Hide();
   LauncherSizer->AddSpacer(10);
 
   ModsSizer = new wxStaticBoxSizer(wxVERTICAL, LauncherPanel, Language->LoadedMods);
@@ -130,10 +134,21 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   SaveAllTextures = new wxCheckBox( ModMakerPanel, -1, Language->CheckBoxSaveAllTextures);
   ModMakerSizer->Add( (wxWindow*) SaveAllTextures, 0, wxEXPAND, 0);
 
+  wxBoxSizer *savePathRow = new wxBoxSizer(wxHORIZONTAL);
+  DirectoryButton = new wxButton( ModMakerPanel, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(180,24));
   SavePath = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextCtrlSavePath, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-  ModMakerSizer->Add( (wxWindow*) SavePath, 0, wxEXPAND, 0);
+  savePathRow->Add( (wxWindow*) DirectoryButton, 0, wxRIGHT, 10);
+  savePathRow->Add( (wxWindow*) SavePath, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( savePathRow, 0, wxEXPAND, 0);
 
   ModMakerSizer->AddSpacer(10);
+
+  wxBoxSizer *updateRow = new wxBoxSizer(wxHORIZONTAL);
+  UpdateButton = new wxButton( ModMakerPanel, ID_Button_Update, Language->ButtonUpdate, wxDefaultPosition, wxSize(140,24));
+  ReloadButton = new wxButton( ModMakerPanel, ID_Button_Reload, Language->ButtonReload, wxDefaultPosition, wxSize(140,24));
+  updateRow->Add( (wxWindow*) UpdateButton, 0, wxRIGHT, 10);
+  updateRow->Add( (wxWindow*) ReloadButton, 0, wxEXPAND, 0);
+  ModMakerSizer->Add( updateRow, 0, wxEXPAND, 0);
 
   NumberOfEntry = 0;
   MaxNumberOfEntry = 1024;
@@ -180,6 +195,19 @@ uMod_GamePage::~uMod_GamePage(void)
 void uMod_GamePage::EnableOpenButton( bool enable)
 {
   if (OpenButton!=NULL) OpenButton->Enable(enable);
+  if (OpenButtonHint!=NULL)
+  {
+    if (enable) OpenButtonHint->Hide();
+    else OpenButtonHint->Show();
+  }
+}
+
+void uMod_GamePage::EnableGameControls( bool enable)
+{
+  EnableOpenButton( enable);
+  if (DirectoryButton!=NULL) DirectoryButton->Enable(enable);
+  if (UpdateButton!=NULL) UpdateButton->Enable(enable);
+  if (ReloadButton!=NULL) ReloadButton->Enable(enable);
 }
 
 void uMod_GamePage::SetGameInfo( const wxString &exe, const wxString &save)
@@ -658,6 +686,10 @@ int uMod_GamePage::UpdateLanguage(void)
   LocateExeButton->SetLabel( Language->ButtonLocateExe);
   CommandLine->SetHint( Language->CommandLineHint);
   OpenButton->SetLabel( Language->ButtonOpen);
+  OpenButtonHint->SetLabel( Language->SelectModsHint);
+  DirectoryButton->SetLabel( Language->ButtonDirectory);
+  UpdateButton->SetLabel( Language->ButtonUpdate);
+  ReloadButton->SetLabel( Language->ButtonReload);
   if (ModsSizer!=NULL && ModsSizer->GetStaticBox()!=NULL)
   {
     ModsSizer->GetStaticBox()->SetLabel( Language->LoadedMods);
