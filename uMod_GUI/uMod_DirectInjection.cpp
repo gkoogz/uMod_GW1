@@ -168,6 +168,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		DIHostTraceFormat(L"Inject failed: LoadLibraryW(kernel32.dll) err=%lu", GetLastError());
 		return;
 	}
+	DIHostTraceFormat(L"Inject: kernel32=%p", kernel32);
 
 	// Get our functions
 	loadlibrary		= GetProcAddress(kernel32,	"LoadLibraryA");
@@ -179,6 +180,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		DIHostTraceFormat(L"Inject failed: GetProcAddress err=%lu", GetLastError());
 		return;
 	}
+	DIHostTrace(L"Inject: resolved kernel32 exports");
 
 // This section will cause compiler warnings on VS8, 
 // you can upgrade the functions or ignore them
@@ -201,6 +203,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		DIHostTraceFormat(L"Inject failed: HeapAlloc err=%lu", GetLastError());
 		return;
 	}
+	DIHostTrace(L"Inject: workspace allocated");
 
 	// Allocate space for the codecave in the process
 	codecaveAddress = VirtualAllocEx(hProcess, 0, 1024, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
@@ -210,6 +213,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		HeapFree(GetProcessHeap(), 0, workspace);
 		return;
 	}
+	DIHostTraceFormat(L"Inject: codecave=%p", codecaveAddress);
 	dwCodecaveAddress = PtrToUlong(codecaveAddress);
 
 // Note there is no error checking done above for any functions that return a pointer/handle.
@@ -581,6 +585,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		HeapFree(GetProcessHeap(), 0, workspace);
 		return;
 	}
+	DIHostTraceFormat(L"Inject: wrote %lu bytes", bytesRet);
 
 	// Restore page protection
 	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect))
@@ -603,11 +608,16 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
 		return;
 	}
+	DIHostTraceFormat(L"Inject: thread=%p", hThread);
 
-	DWORD waitResult = WaitForSingleObject(hThread, INFINITE);
+	DWORD waitResult = WaitForSingleObject(hThread, 10000);
 	if (waitResult == WAIT_FAILED)
 	{
 		DIHostTraceFormat(L"Inject warning: WaitForSingleObject err=%lu", GetLastError());
+	}
+	else if (waitResult == WAIT_TIMEOUT)
+	{
+		DIHostTrace(L"Inject warning: WaitForSingleObject timeout");
 	}
 	CloseHandle(hThread);
 
