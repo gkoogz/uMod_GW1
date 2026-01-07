@@ -308,6 +308,7 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
   {
     if (wxMessageBox(Language->ExitGameAnyway, "ERROR", wxYES_NO|wxICON_ERROR)!=wxYES) {event.Veto(); return;}
   }
+  SaveLauncherSettings( ExePathText->GetValue(), CommandLineText->GetValue());
   event.Skip();
   Destroy();
 }
@@ -591,7 +592,10 @@ void uMod_Frame::OnButtonLocate(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::UpdateLaunchButtonState(void)
 {
-  bool has_exe = !ExePathText->GetValue().IsEmpty();
+  wxString exe_path = ExePathText->GetValue();
+  exe_path.Trim();
+  exe_path.Trim(false);
+  bool has_exe = !exe_path.IsEmpty();
   LaunchButton->Enable( has_exe);
 }
 
