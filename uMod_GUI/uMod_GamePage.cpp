@@ -49,9 +49,9 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherSizer = new wxBoxSizer(wxVERTICAL);
   ModMakerSizer = new wxBoxSizer(wxVERTICAL);
 
+  const wxSize launcher_button_size(200, 28);
   wxBoxSizer *launchRow = new wxBoxSizer(wxHORIZONTAL);
-  LaunchButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLaunch);
-  LaunchButton->SetMinSize(wxSize(220, 40));
+  LaunchButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLaunch, wxDefaultPosition, launcher_button_size);
   LaunchButton->SetBackgroundColour(wxColour(0, 120, 215));
   LaunchButton->SetForegroundColour(*wxWHITE);
   CommandLine = new wxTextCtrl( LauncherPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
@@ -62,7 +62,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherSizer->AddSpacer(10);
 
   wxBoxSizer *exeRow = new wxBoxSizer(wxHORIZONTAL);
-  LocateExeButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLocateExe);
+  LocateExeButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLocateExe, wxDefaultPosition, launcher_button_size);
   ExePath = new wxTextCtrl( LauncherPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   ExeStatus = new wxStaticText( LauncherPanel, wxID_ANY, "");
   ExeStatus->SetForegroundColour(wxColour(0, 160, 0));
@@ -73,7 +73,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherSizer->AddSpacer(10);
 
   wxBoxSizer *openRow = new wxBoxSizer(wxHORIZONTAL);
-  OpenButton = new wxButton( LauncherPanel, ID_Button_Open, Language->ButtonOpen, wxDefaultPosition, wxSize(200,24));
+  OpenButton = new wxButton( LauncherPanel, ID_Button_Open, Language->ButtonOpen, wxDefaultPosition, launcher_button_size);
   OpenButtonHint = new wxStaticText( LauncherPanel, wxID_ANY, Language->SelectModsHint);
   OpenButtonHint->SetForegroundColour(wxColour(120, 120, 120));
   openRow->Add( (wxWindow*) OpenButton, 0, wxRIGHT, 10);
