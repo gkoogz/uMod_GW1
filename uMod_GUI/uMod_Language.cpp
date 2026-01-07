@@ -710,3 +710,14 @@ int uMod_Language::LoadKeys(void)
  */
   return 0;
 }
+
+int uMod_Language::EnsureKeysLoaded(void)
+{
+  if (!KeyStrings.IsEmpty()) return 0;
+
+  wxString language = CurrentLanguage;
+  if (language.IsEmpty()) language = "English";
+  LoadLanguage(language);
+  LoadKeys();
+  return 0;
+}

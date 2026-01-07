@@ -23,6 +23,14 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 uMod_GamePage::uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct &pipe)
   : wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL), Sender(pipe)
 {
+  if (Language == NULL)
+  {
+    Language = new uMod_Language("English");
+  }
+  else
+  {
+    Language->EnsureKeysLoaded();
+  }
   ExeName = exe;
   TemplateName = save;
 

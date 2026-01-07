@@ -31,6 +31,7 @@ public:
   int LoadLanguage(const wxString &name);
   int GetLanguages(wxArrayString &lang);
   int GetHelpMessage(wxString &help);
+  int EnsureKeysLoaded(void);
   wxString GetCurrentLanguage(void) {return CurrentLanguage;}
 
   wxString MenuLanguage;
