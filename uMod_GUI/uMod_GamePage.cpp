@@ -21,6 +21,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/tooltip.h>
 
 static const wchar_t* DEFAULT_MODS_FILE = L"uMod_DefaultMods.txt";
+static const wchar_t* DEFAULT_MODS_STATE_FILE = L"uMod_DefaultModsEnabled.txt";
 
 
 uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame)
@@ -176,7 +177,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   UpdateLaunchState();
   LoadDefaultModsList();
   if (LoadDefaultMods->GetValue()) ApplyDefaultMods();
-  else ClearModsList();
+  else ClearModsList(false);
 }
 
 uMod_GamePage::~uMod_GamePage(void)
@@ -267,21 +268,12 @@ void uMod_GamePage::SetExePath(const wxString &path)
 
 void uMod_GamePage::OnModCheck(wxCommandEvent& WXUNUSED(event))
 {
-  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue()) SaveDefaultModsList();
+  SaveDefaultModsList();
 }
 
 void uMod_GamePage::OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event))
 {
-  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue())
-  {
-    SaveDefaultModsList();
-    ApplyDefaultMods();
-  }
-  else
-  {
-    ClearModsList();
-    SaveDefaultModsList();
-  }
+  SaveDefaultModsState();
 }
 
 int uMod_GamePage::LoadDefaultModsList(void)
@@ -321,22 +313,12 @@ int uMod_GamePage::LoadDefaultModsList(void)
     if (!entry.IsEmpty()) DefaultMods.Add(entry);
   }
 
-  if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(DefaultMods.GetCount()>0);
+  LoadDefaultModsState();
   return 0;
 }
 
 int uMod_GamePage::SaveDefaultModsList(void)
 {
-  if (LoadDefaultMods==NULL) return 0;
-  if (!LoadDefaultMods->GetValue())
-  {
-    DefaultMods.Empty();
-    wxFile file;
-    file.Open( DEFAULT_MODS_FILE, wxFile::write);
-    if (file.IsOpened()) file.Close();
-    return 0;
-  }
-
   DefaultMods.Empty();
   for (int i=0; i<NumberOfEntry; i++)
   {
@@ -353,6 +335,52 @@ int uMod_GamePage::SaveDefaultModsList(void)
     content << "\n";
     file.Write( content.wc_str(), content.Len()*2);
   }
+  file.Close();
+  return 0;
+}
+
+int uMod_GamePage::LoadDefaultModsState(void)
+{
+  bool enabled = true;
+  wxFile file;
+  if (file.Access( DEFAULT_MODS_STATE_FILE, wxFile::read))
+  {
+    file.Open( DEFAULT_MODS_STATE_FILE, wxFile::read);
+    if (file.IsOpened())
+    {
+      unsigned len = file.Length();
+      unsigned char* buffer;
+      try {buffer = new unsigned char [len+2];}
+      catch (...) {return -1;}
+
+      unsigned int result = file.Read( buffer, len);
+      file.Close();
+      if (result != len) {delete [] buffer; return -1;}
+
+      wchar_t *buff = (wchar_t*)buffer;
+      len/=2;
+      buff[len]=0;
+      enabled = (buff[0] == L'1');
+      delete [] buffer;
+    }
+  }
+  else
+  {
+    enabled = (DefaultMods.GetCount()>0);
+  }
+
+  if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(enabled);
+  return 0;
+}
+
+int uMod_GamePage::SaveDefaultModsState(void)
+{
+  if (LoadDefaultMods==NULL) return 0;
+  wxFile file;
+  file.Open( DEFAULT_MODS_STATE_FILE, wxFile::write);
+  if (!file.IsOpened()) return -1;
+  wxString content = LoadDefaultMods->GetValue() ? "1" : "0";
+  file.Write( content.wc_str(), content.Len()*2);
   file.Close();
   return 0;
 }
@@ -375,7 +403,7 @@ int uMod_GamePage::ApplyDefaultMods(void)
   return added;
 }
 
-void uMod_GamePage::ClearModsList(void)
+void uMod_GamePage::ClearModsList(bool clear_defaults)
 {
   for (int i=0; i<NumberOfEntry; i++)
   {
@@ -398,7 +426,7 @@ void uMod_GamePage::ClearModsList(void)
   }
   NumberOfEntry = 0;
   Files.Clear();
-  DefaultMods.Clear();
+  if (clear_defaults) DefaultMods.Clear();
 
   LauncherPanel->Layout();
   LauncherSizer->FitInside(LauncherPanel);
@@ -502,7 +530,7 @@ int uMod_GamePage::AddTextureInternal( const wxString &file_name, bool update_ga
   LauncherPanel->Layout();
   LauncherSizer->FitInside(LauncherPanel);
 
-  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue()) SaveDefaultModsList();
+  SaveDefaultModsList();
   if (update_game) return UpdateGame();
   return 0;
 }
@@ -706,7 +734,7 @@ void uMod_GamePage::OnButtonDelete(wxCommandEvent& event)
   delete CheckButtonDelete[NumberOfEntry];
   delete CheckBoxHSizers[NumberOfEntry];
 
-  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue()) SaveDefaultModsList();
+  SaveDefaultModsList();
 
   LauncherPanel->Layout();
   LauncherSizer->FitInside(LauncherPanel);

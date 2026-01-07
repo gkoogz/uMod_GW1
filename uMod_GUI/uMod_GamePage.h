@@ -66,8 +66,10 @@ private:
   void OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event));
   int LoadDefaultModsList(void);
   int SaveDefaultModsList(void);
+  int LoadDefaultModsState(void);
+  int SaveDefaultModsState(void);
   int ApplyDefaultMods(void);
-  void ClearModsList(void);
+  void ClearModsList(bool clear_defaults);
   int AddTextureInternal(const wxString &file_name, bool update_game);
 
   int GetSettings(void);
