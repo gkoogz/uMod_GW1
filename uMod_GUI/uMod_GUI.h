@@ -33,6 +33,7 @@ public:
   int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
   int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
   int LaunchGame(const wxString &game_path, const wxString &command_line);
+  bool IsGameActive(void) const;
 
 
   void OnAddGame( wxCommandEvent &event);

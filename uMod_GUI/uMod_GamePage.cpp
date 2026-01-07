@@ -557,6 +557,11 @@ int uMod_GamePage::GetSettings(void)
 
 int uMod_GamePage::UpdateGame(void)
 {
+  if (MainFrame!=NULL && !MainFrame->IsGameActive())
+  {
+    if (GetSettings()) LastError.Empty();
+    return 0;
+  }
   if (int ret = GetSettings()) return ret;
 
   if (int ret = Sender.Send( Game, GameOld, false))
@@ -574,6 +579,11 @@ int uMod_GamePage::UpdateGame(void)
 
 int uMod_GamePage::ReloadGame(void)
 {
+  if (MainFrame!=NULL && !MainFrame->IsGameActive())
+  {
+    if (GetSettings()) LastError.Empty();
+    return 0;
+  }
   if (int ret = GetSettings()) return ret;
 
   if (int ret = Sender.Send( Game, GameOld, true))

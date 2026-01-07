@@ -132,6 +132,11 @@ uMod_Frame::~uMod_Frame(void)
   Settings.Save();
 }
 
+bool uMod_Frame::IsGameActive(void) const
+{
+  return ActivePipe.Out != INVALID_HANDLE_VALUE;
+}
+
 int uMod_Frame::KillServer(void)
 {
   HANDLE pipe = CreateFileW( PIPE_Game2uMod,// pipe name
