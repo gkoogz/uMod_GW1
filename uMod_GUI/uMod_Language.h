@@ -56,6 +56,8 @@ public:
   wxString ButtonLocateGuildWars;
   wxString TabLauncher;
   wxString TabTextureRipper;
+  wxString CommandLineLabel;
+  wxString CommandLineHelpTitle;
 
   wxString ChooseFile;
   wxString ChooseDir;

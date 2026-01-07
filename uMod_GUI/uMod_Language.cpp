@@ -203,6 +203,8 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, ButtonLocateGuildWars)
     CheckEntry( command, msg, TabLauncher)
     CheckEntry( command, msg, TabTextureRipper)
+    CheckEntry( command, msg, CommandLineLabel)
+    CheckEntry( command, msg, CommandLineHelpTitle)
     CheckEntry( command, msg, ChooseFile)
     CheckEntry( command, msg, ChooseDir)
     CheckEntry( command, msg, TextCtrlTemplate)
@@ -279,6 +281,8 @@ int uMod_Language::LoadDefault(void)
   ButtonLocateGuildWars = "Locate Guild Wars Executable";
   TabLauncher = "Launcher";
   TabTextureRipper = "Texture Ripper";
+  CommandLineLabel = "Command Line Arguments (optional):";
+  CommandLineHelpTitle = "Command Line Arguments";
 
   ChooseFile = "Choose a file";
   ChooseDir = "Choose a directory";

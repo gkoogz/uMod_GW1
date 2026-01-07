@@ -44,6 +44,8 @@ public:
   void OnButtonReload(wxCommandEvent& WXUNUSED(event));
   void OnButtonLaunch(wxCommandEvent& WXUNUSED(event));
   void OnButtonLocate(wxCommandEvent& WXUNUSED(event));
+  void OnCommandLineHelp(wxCommandEvent& WXUNUSED(event));
+  void OnCommandLineHelpHover(wxMouseEvent& event);
 
   void OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event));
   void OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event));
@@ -64,6 +66,7 @@ private:
   void UpdateLaunchButtonState(void);
   void LoadLauncherSettings(void);
   void SaveLauncherSettings(const wxString &exe_path, const wxString &command_line);
+  void ShowCommandLineHelp(void);
 
   uMod_Settings Settings;
   int KillServer(void);
@@ -87,6 +90,8 @@ private:
   wxButton *LocateButton;
   wxTextCtrl *CommandLineText;
   wxTextCtrl *ExePathText;
+  wxStaticText *CommandLineLabel;
+  wxButton *CommandLineHelpButton;
 
 
   wxMenuBar *MenuBar;
