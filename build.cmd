@@ -27,7 +27,7 @@ if errorlevel 1 (
   popd
   exit /b 1
 )
-nmake -f makefile.vc
+nmake -f makefile.vc /a
 if errorlevel 1 (
   echo DX9 build failed.
   popd
@@ -51,7 +51,7 @@ if errorlevel 1 (
   popd
   exit /b 1
 )
-nmake -f makefile.vc BUILD=release
+nmake -f makefile.vc BUILD=release /a
 if errorlevel 1 (
   echo GUI build failed.
   popd
