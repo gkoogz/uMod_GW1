@@ -619,10 +619,26 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	{
 		DIHostTrace(L"Inject warning: WaitForSingleObject timeout");
 	}
+	else
+	{
+		DWORD exitCode = 0;
+		if (GetExitCodeThread(hThread, &exitCode))
+		{
+			DIHostTraceFormat(L"Inject: thread exit code=%lu", exitCode);
+		}
+		else
+		{
+			DIHostTraceFormat(L"Inject warning: GetExitCodeThread err=%lu", GetLastError());
+		}
+	}
 	CloseHandle(hThread);
 
 	// Free the memory in the process that we allocated
-	if (!VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE))
+	if (waitResult == WAIT_TIMEOUT)
+	{
+		DIHostTrace(L"Inject: skipping VirtualFreeEx due to timeout");
+	}
+	else if (!VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE))
 	{
 		DIHostTraceFormat(L"Inject warning: VirtualFreeEx err=%lu", GetLastError());
 	}
