@@ -202,6 +202,7 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, ButtonLaunch)
     CheckEntry( command, msg, ButtonLocateExe)
     CheckEntry( command, msg, SelectModsHint)
+    CheckEntry( command, msg, LoadDefaultMods)
     CheckEntry( command, msg, ChooseFile)
     CheckEntry( command, msg, ChooseDir)
     CheckEntry( command, msg, TextCtrlTemplate)
@@ -280,7 +281,8 @@ int uMod_Language::LoadDefault(void)
   ButtonReload = "Update (reload)";
   ButtonLaunch = "Launch Guild Wars";
   ButtonLocateExe = "Locate Guild Wars Executable";
-  SelectModsHint = "Game must be running before you can select mods.";
+  SelectModsHint = "Game must be running to select mods.";
+  LoadDefaultMods = "Load these mods by default.";
 
   ChooseFile = "Choose a file";
   ChooseDir = "Choose a directory";

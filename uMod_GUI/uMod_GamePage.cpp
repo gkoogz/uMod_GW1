@@ -20,13 +20,14 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/filename.h>
 #include <wx/tooltip.h>
 
+static const wchar_t* DEFAULT_MODS_FILE = L"uMod_DefaultMods.txt";
+
 
 uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame)
   : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize), Sender(pipe)
 {
   MainFrame = frame;
   ExeName = exe;
-  TemplateName = save;
 
   CheckBoxHSizers = NULL;
   CheckButtonUp = NULL;
@@ -69,12 +70,13 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherSizer->Add( exeRow, 0, wxEXPAND, 0);
   LauncherSizer->AddSpacer(10);
 
+  wxBoxSizer *openRow = new wxBoxSizer(wxHORIZONTAL);
   OpenButton = new wxButton( LauncherPanel, ID_Button_Open, Language->ButtonOpen, wxDefaultPosition, wxSize(200,24));
-  LauncherSizer->Add( (wxWindow*) OpenButton, 0, wxEXPAND, 0);
   OpenButtonHint = new wxStaticText( LauncherPanel, wxID_ANY, Language->SelectModsHint);
   OpenButtonHint->SetForegroundColour(wxColour(120, 120, 120));
-  LauncherSizer->Add( (wxWindow*) OpenButtonHint, 0, wxTOP, 4);
-  OpenButtonHint->Hide();
+  openRow->Add( (wxWindow*) OpenButton, 0, wxRIGHT, 10);
+  openRow->Add( (wxWindow*) OpenButtonHint, 0, wxALIGN_CENTER_VERTICAL, 0);
+  LauncherSizer->Add( openRow, 0, wxALIGN_LEFT, 0);
   LauncherSizer->AddSpacer(10);
 
   ModsSizer = new wxStaticBoxSizer(wxVERTICAL, LauncherPanel, Language->LoadedMods);
@@ -84,8 +86,8 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherPanel->SetScrollRate(0, 20);
   LauncherSizer->FitInside(LauncherPanel);
 
-  TemplateFile = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextCtrlTemplate, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-  ModMakerSizer->Add( (wxWindow*) TemplateFile, 0, wxEXPAND, 0);
+  LoadDefaultMods = new wxCheckBox( ModMakerPanel, wxID_ANY, Language->LoadDefaultMods);
+  ModMakerSizer->Add( (wxWindow*) LoadDefaultMods, 0, wxEXPAND, 0);
   ModMakerSizer->AddSpacer(10);
 
   SizerKeys[0] = new wxBoxSizer(wxHORIZONTAL);
@@ -170,10 +172,11 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
 
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLaunch, this, LaunchButton->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
+  Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
 
   UpdateLaunchState();
-
-  if (TemplateName.Len()>0) LoadTemplate(TemplateName);
+  LoadDefaultModsList();
+  if (LoadDefaultMods->GetValue()) ApplyDefaultMods();
 }
 
 uMod_GamePage::~uMod_GamePage(void)
@@ -200,6 +203,11 @@ void uMod_GamePage::EnableOpenButton( bool enable)
     if (enable) OpenButtonHint->Hide();
     else OpenButtonHint->Show();
   }
+  if (LauncherPanel!=NULL)
+  {
+    LauncherPanel->Layout();
+    LauncherSizer->FitInside(LauncherPanel);
+  }
 }
 
 void uMod_GamePage::EnableGameControls( bool enable)
@@ -212,9 +220,13 @@ void uMod_GamePage::EnableGameControls( bool enable)
 
 void uMod_GamePage::SetGameInfo( const wxString &exe, const wxString &save)
 {
+  (void)save;
   ExeName = exe;
-  TemplateName = save;
-  if (TemplateName.Len()>0) LoadTemplate(TemplateName);
+  if (LoadDefaultMods->GetValue())
+  {
+    ApplyDefaultMods();
+    UpdateGame();
+  }
 }
 
 int uMod_GamePage::LoadLauncherSettings(void)
@@ -256,6 +268,103 @@ void uMod_GamePage::SetExePath(const wxString &path)
 {
   ExePath->SetValue( path);
   UpdateLaunchState();
+}
+
+void uMod_GamePage::OnModCheck(wxCommandEvent& WXUNUSED(event))
+{
+  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue()) SaveDefaultModsList();
+}
+
+void uMod_GamePage::OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event))
+{
+  SaveDefaultModsList();
+}
+
+int uMod_GamePage::LoadDefaultModsList(void)
+{
+  DefaultMods.Empty();
+  wxFile file;
+  if (!file.Access( DEFAULT_MODS_FILE, wxFile::read)) return 0;
+  file.Open( DEFAULT_MODS_FILE, wxFile::read);
+  if (!file.IsOpened()) return 0;
+
+  unsigned len = file.Length();
+  unsigned char* buffer;
+  try {buffer = new unsigned char [len+2];}
+  catch (...) {return -1;}
+
+  unsigned int result = file.Read( buffer, len);
+  file.Close();
+  if (result != len) {delete [] buffer; return -1;}
+
+  wchar_t *buff = (wchar_t*)buffer;
+  len/=2;
+  buff[len]=0;
+
+  wxString content;
+  content =  buff;
+  delete [] buffer;
+
+  wxStringTokenizer token( content, "\n");
+  while (token.HasMoreTokens())
+  {
+    wxString entry = token.GetNextToken();
+    entry.Replace("\r","");
+    if (!entry.IsEmpty()) DefaultMods.Add(entry);
+  }
+
+  if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(DefaultMods.GetCount()>0);
+  return 0;
+}
+
+int uMod_GamePage::SaveDefaultModsList(void)
+{
+  if (LoadDefaultMods==NULL) return 0;
+  if (!LoadDefaultMods->GetValue())
+  {
+    DefaultMods.Empty();
+    wxFile file;
+    file.Open( DEFAULT_MODS_FILE, wxFile::write);
+    if (file.IsOpened()) file.Close();
+    return 0;
+  }
+
+  DefaultMods.Empty();
+  for (int i=0; i<NumberOfEntry; i++)
+  {
+    if (CheckBoxes[i]->GetValue()) DefaultMods.Add(Files[i]);
+  }
+
+  wxFile file;
+  file.Open( DEFAULT_MODS_FILE, wxFile::write);
+  if (!file.IsOpened()) return -1;
+  wxString content;
+  for (unsigned int i=0; i<DefaultMods.GetCount(); i++)
+  {
+    content = DefaultMods[i];
+    content << "\n";
+    file.Write( content.wc_str(), content.Len()*2);
+  }
+  file.Close();
+  return 0;
+}
+
+int uMod_GamePage::ApplyDefaultMods(void)
+{
+  if (DefaultMods.GetCount()==0) return 0;
+  int added = 0;
+  for (unsigned int i=0; i<DefaultMods.GetCount(); i++)
+  {
+    const wxString &file_name = DefaultMods[i];
+    bool exists = false;
+    for (int j=0; j<NumberOfEntry; j++) if (Files[j]==file_name) {exists = true; break;}
+    if (!exists)
+    {
+      if (AddTextureInternal(file_name, false)==0) added++;
+      else LastError.Empty();
+    }
+  }
+  return added;
 }
 
 void uMod_GamePage::UpdateLaunchState(void)
@@ -305,6 +414,11 @@ int uMod_GamePage::SetSavePath( const wxString &path)
 
 int uMod_GamePage::AddTexture( const wxString &file_name)
 {
+  return AddTextureInternal(file_name, true);
+}
+
+int uMod_GamePage::AddTextureInternal( const wxString &file_name, bool update_game)
+{
   if (NumberOfEntry>=MaxNumberOfEntry)
   {
     if (GetMoreMemory( CheckBoxes, MaxNumberOfEntry, MaxNumberOfEntry+1024)) {LastError = Language->Error_Memory; return -1;}
@@ -324,6 +438,7 @@ int uMod_GamePage::AddTexture( const wxString &file_name)
   CheckBoxes[NumberOfEntry] = new wxCheckBox( LauncherPanel, -1, file_name);
   CheckBoxes[NumberOfEntry]->SetValue( true);
   CheckBoxes[NumberOfEntry]->SetToolTip( tool_tip);
+  CheckBoxes[NumberOfEntry]->Bind( wxEVT_CHECKBOX, &uMod_GamePage::OnModCheck, this);
 
   wchar_t button_txt[2];
   button_txt[0] = 8657;
@@ -349,7 +464,9 @@ int uMod_GamePage::AddTexture( const wxString &file_name)
   LauncherPanel->Layout();
   LauncherSizer->FitInside(LauncherPanel);
 
-  return UpdateGame();
+  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue()) SaveDefaultModsList();
+  if (update_game) return UpdateGame();
+  return 0;
 }
 
 int uMod_GamePage::GetSettings(void)
@@ -433,138 +550,6 @@ int uMod_GamePage::ReloadGame(void)
   return 0;
 }
 
-int uMod_GamePage::SaveTemplate( const wxString &file_name)
-{
-  if (int ret = GetSettings()) return ret;
-  if (int ret = Game.SaveToFile( file_name))
-  {
-    LastError = Language->Error_SaveFile;
-    LastError <<"\n" << file_name;
-    return ret;
-  }
-  TemplateName = file_name;
-  wxString path;
-  path = Language->TextCtrlTemplate;
-  path << TemplateName;
-  TemplateFile->SetValue( path);
-
-  return 0;
-}
-
-int uMod_GamePage::LoadTemplate( const wxString &file_name)
-{
-  if (Game.LoadFromFile(file_name)) return -1;
-  TemplateName = file_name;
-  wxArrayString comments;
-
-  if (Sender.Send( Game, GameOld, true, &comments)==0) GameOld = Game;
-
-  wxString path;
-  path = Language->TextCtrlTemplate;
-  path << TemplateName;
-  TemplateFile->SetValue( path);
-
-  int key = Game.GetKeyBack();
-  if (key>=0) ChoiceKeyBack->SetSelection( key);
-  key = Game.GetKeySave();
-  if (key>=0) ChoiceKeySave->SetSelection( key);
-  key = Game.GetKeyNext();
-  if (key>=0) ChoiceKeyNext->SetSelection( key);
-
-  int colour[3];
-  Game.GetFontColour( colour);
-  SetColour( &FontColour[1], colour);
-  Game.GetTextureColour( colour);
-  SetColour( &TextureColour[1], colour);
-
-  SaveSingleTexture->SetValue( Game.GetSaveSingleTexture());
-  SaveAllTextures->SetValue( Game.GetSaveAllTextures());
-
-  path = Language->TextCtrlSavePath;
-  path << Game.GetSavePath();
-  SavePath->SetValue( path);
-
-  int new_NumberOfEntry = Game.GetNumberOfFiles();
-
-  Game.GetFiles( Files);
-
-  if (new_NumberOfEntry>=MaxNumberOfEntry)
-  {
-    MaxNumberOfEntry = ((NumberOfEntry/1024)+1)*1024;
-    if (GetMoreMemory( CheckBoxes, NumberOfEntry, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return -1;}
-    if (GetMoreMemory( CheckBoxHSizers, NumberOfEntry, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return -1;}
-    if (GetMoreMemory( CheckButtonUp, NumberOfEntry, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return -1;}
-    if (GetMoreMemory( CheckButtonDown, NumberOfEntry, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return -1;}
-    if (GetMoreMemory( CheckButtonDelete, NumberOfEntry, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return -1;}
-  }
-
-  bool *checked = NULL;
-  if (GetMemory( checked, new_NumberOfEntry)) {LastError = Language->Error_Memory; return -1;}
-  Game.GetChecked( checked, new_NumberOfEntry);
-
-
-  for (int i=0; i<NumberOfEntry && i<new_NumberOfEntry; i++)
-  {
-    CheckBoxes[i]->SetLabel( Files[i]);
-    CheckBoxes[i]->SetValue( checked[i]);
-    CheckBoxes[i]->SetToolTip( comments[i]);
-  }
-
-  for (int i=new_NumberOfEntry; i<NumberOfEntry; i++)
-  {
-    Unbind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonUp, this, ID_Button_Texture+3*i);
-    Unbind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonDown, this, ID_Button_Texture+3*i+1);
-    Unbind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonDelete, this, ID_Button_Texture+3*i+2);
-
-
-    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckBoxes[i]);
-    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckButtonUp[i]);
-    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckButtonDown[i]);
-    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckButtonDelete[i]);
-
-    ModsSizer->Detach( CheckBoxHSizers[i]);
-
-    delete CheckBoxes[i];
-    delete CheckButtonUp[i];
-    delete CheckButtonDown[i];
-    delete CheckButtonDelete[i];
-    delete CheckBoxHSizers[i];
-  }
-  for (int i=NumberOfEntry; i<new_NumberOfEntry; i++)
-  {
-    CheckBoxHSizers[i] = new wxBoxSizer(wxHORIZONTAL);
-    CheckBoxes[i] = new wxCheckBox( LauncherPanel, -1, Files[i]);
-    CheckBoxes[i]->SetValue( checked[i]);
-    CheckBoxes[i]->SetToolTip( comments[i]);
-
-    wchar_t button_txt[2];
-    button_txt[0] = 8657;
-    button_txt[1] = 0;
-
-    CheckButtonUp[i] = new wxButton( LauncherPanel, ID_Button_Texture+3*i, button_txt, wxDefaultPosition, wxSize(24,24));
-    Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonUp, this, ID_Button_Texture+3*i);
-
-    button_txt[0] = 8659;
-    CheckButtonDown[i] = new wxButton( LauncherPanel, ID_Button_Texture+3*i+1, button_txt, wxDefaultPosition, wxSize(24,24));
-    Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonDown, this, ID_Button_Texture+3*i+1);
-
-    CheckButtonDelete[i] = new wxButton( LauncherPanel, ID_Button_Texture+3*i+2, L"X", wxDefaultPosition, wxSize(24,24));
-    Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonDelete, this, ID_Button_Texture+3*i+2);
-
-    CheckBoxHSizers[i]->Add( (wxWindow*) CheckBoxes[i], 1, wxEXPAND, 0);
-    CheckBoxHSizers[i]->Add( (wxWindow*) CheckButtonUp[i], 0, wxEXPAND, 0);
-    CheckBoxHSizers[i]->Add( (wxWindow*) CheckButtonDown[i], 0, wxEXPAND, 0);
-    CheckBoxHSizers[i]->Add( (wxWindow*) CheckButtonDelete[i], 0, wxEXPAND, 0);
-
-    ModsSizer->Add( CheckBoxHSizers[i], 0, wxEXPAND, 0);
-  }
-  delete [] checked;
-  NumberOfEntry = new_NumberOfEntry;
-
-  LauncherPanel->Layout();
-  LauncherSizer->FitInside(LauncherPanel);
-  return 0;
-}
 
 int uMod_GamePage::SetColour( wxTextCtrl** txt, int *colour)
 {
@@ -673,6 +658,8 @@ void uMod_GamePage::OnButtonDelete(wxCommandEvent& event)
   delete CheckButtonDelete[NumberOfEntry];
   delete CheckBoxHSizers[NumberOfEntry];
 
+  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue()) SaveDefaultModsList();
+
   LauncherPanel->Layout();
   LauncherSizer->FitInside(LauncherPanel);
 }
@@ -702,9 +689,7 @@ int uMod_GamePage::UpdateLanguage(void)
   TextureColour[0]->SetValue( Language->TextureColour);
   SaveAllTextures->SetLabel( Language->CheckBoxSaveAllTextures);
   SaveSingleTexture->SetLabel( Language->CheckBoxSaveSingleTexture);
-  wxString template_label = Language->TextCtrlTemplate;
-  template_label << TemplateName;
-  TemplateFile->SetValue( template_label);
+  LoadDefaultMods->SetLabel( Language->LoadDefaultMods);
   wxString temp = Language->TextCtrlSavePath;
   temp << Game.GetSavePath();
   SavePath->SetValue( temp);

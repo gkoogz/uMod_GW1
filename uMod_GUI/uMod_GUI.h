@@ -46,20 +46,6 @@ public:
   void OnButtonUpdate(wxCommandEvent& WXUNUSED(event));
   void OnButtonReload(wxCommandEvent& WXUNUSED(event));
 
-  void OnMenuStartGame( wxCommandEvent &event);
-
-  void OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event));
-  void OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event));
-  void OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event));
-  void OnMenuSetDefaultTemplate(wxCommandEvent& WXUNUSED(event));
-  void OnMenuLanguage(wxCommandEvent& WXUNUSED(event));
-
-  void OnMenuExit(wxCommandEvent& WXUNUSED(event));
-
-  void OnMenuHelp(wxCommandEvent& WXUNUSED(event));
-  void OnMenuAbout(wxCommandEvent& WXUNUSED(event));
-  void OnMenuAcknowledgement(wxCommandEvent& WXUNUSED(event));
-
 private:
 
   int ActivateGamesControl(void);
@@ -74,21 +60,12 @@ private:
   PipeStruct ActivePipe;
 
 
-  wxMenuBar *MenuBar;
-  wxMenu *MenuMain;
-  wxMenu *MenuHelp;
-
   wxBoxSizer *MainSizer;
 
 
   int NumberOfGames;
   int MaxNumberOfGames;
   uMod_Client **Clients;
-
-  int LoadTemplate(void);
-  int SaveTemplate(void);
-  wxArrayString SaveFile_Exe;
-  wxArrayString SaveFile_Name;
 
   wxString LastError;
 

@@ -34,16 +34,12 @@ public:
   int UpdateGame(void);
   int ReloadGame(void);
 
-  int SaveTemplate( const wxString &file_name);
-  int LoadTemplate( const wxString &file_name);
-
   int LoadLauncherSettings(void);
   void SetGameInfo( const wxString &exe, const wxString &save);
   void EnableOpenButton( bool enable);
   void EnableGameControls( bool enable);
 
   wxString GetExeName(void) {return ExeName;}
-  wxString GetTemplateName(void) {return TemplateName;}
 
   int SetOpenPath(const wxString &path) {return Game.SetOpenPath(path);}
   wxString GetOpenPath(void) {return Game.GetOpenPath();}
@@ -66,13 +62,18 @@ private:
   void UpdateLaunchState(void);
   int PersistLauncherSettings(const wxString &exe_path, const wxString &command_line);
   void SetExePath(const wxString &path);
+  void OnModCheck(wxCommandEvent& WXUNUSED(event));
+  void OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event));
+  int LoadDefaultModsList(void);
+  int SaveDefaultModsList(void);
+  int ApplyDefaultMods(void);
+  int AddTextureInternal(const wxString &file_name, bool update_game);
 
   int GetSettings(void);
   int SetColour( wxTextCtrl** txt, int *colour);
   int GetColour( wxTextCtrl* txt, int def);
 
   wxString ExeName;
-  wxString TemplateName;
 
   wxBoxSizer *SizerKeys[2];
   wxTextCtrl *TextKeyBack;
@@ -107,7 +108,7 @@ private:
   wxButton *UpdateButton;
   wxButton *ReloadButton;
 
-  wxTextCtrl *TemplateFile;
+  wxCheckBox *LoadDefaultMods;
   wxCheckBox *SaveAllTextures;
   wxCheckBox *SaveSingleTexture;
   wxTextCtrl *SavePath;
@@ -123,6 +124,7 @@ private:
 
 
   wxArrayString Files;
+  wxArrayString DefaultMods;
   uMod_GameInfo Game;
   uMod_GameInfo GameOld;
 
