@@ -95,6 +95,8 @@ enum
   ID_Menu_SetDefaultTemplate,
   ID_Add_Game,
   ID_Delete_Game,
+  ID_Button_Launch,
+  ID_Button_Locate,
   ID_Button_Texture, //this entry must be the last!!
 };
 

@@ -42,8 +42,8 @@ public:
   void OnButtonPath(wxCommandEvent& WXUNUSED(event));
   void OnButtonUpdate(wxCommandEvent& WXUNUSED(event));
   void OnButtonReload(wxCommandEvent& WXUNUSED(event));
-
-  void OnMenuStartGame( wxCommandEvent &event);
+  void OnButtonLaunch(wxCommandEvent& WXUNUSED(event));
+  void OnButtonLocate(wxCommandEvent& WXUNUSED(event));
 
   void OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event));
   void OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event));
@@ -61,6 +61,9 @@ private:
 
   int ActivateGamesControl(void);
   int DeactivateGamesControl(void);
+  void UpdateLaunchButtonState(void);
+  void LoadLauncherSettings(void);
+  void SaveLauncherSettings(const wxString &exe_path, const wxString &command_line);
 
   uMod_Settings Settings;
   int KillServer(void);
@@ -71,12 +74,19 @@ private:
   uMod_Server *Server;
 
   wxNotebook *Notebook;
+  wxPanel *LauncherPanel;
+  uMod_GamePage *TextureRipperPage;
+  PipeStruct DefaultPipe;
 
 
   wxButton *OpenButton;
   wxButton *DirectoryButton;
   wxButton *UpdateButton;
   wxButton *ReloadButton;
+  wxButton *LaunchButton;
+  wxButton *LocateButton;
+  wxTextCtrl *CommandLineText;
+  wxTextCtrl *ExePathText;
 
 
   wxMenuBar *MenuBar;

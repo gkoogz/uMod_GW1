@@ -39,14 +39,13 @@ BEGIN_EVENT_TABLE(uMod_Frame, wxFrame)
   EVT_BUTTON(ID_Button_Path, uMod_Frame::OnButtonPath)
   EVT_BUTTON(ID_Button_Update, uMod_Frame::OnButtonUpdate)
   EVT_BUTTON(ID_Button_Reload, uMod_Frame::OnButtonReload)
+  EVT_BUTTON(ID_Button_Launch, uMod_Frame::OnButtonLaunch)
+  EVT_BUTTON(ID_Button_Locate, uMod_Frame::OnButtonLocate)
 
   EVT_MENU(ID_Menu_Help, uMod_Frame::OnMenuHelp)
   EVT_MENU(ID_Menu_About, uMod_Frame::OnMenuAbout)
   EVT_MENU(ID_Menu_Acknowledgement, uMod_Frame::OnMenuAcknowledgement)
 
-
-  EVT_MENU(ID_Menu_StartGame, uMod_Frame::OnMenuStartGame)
-  EVT_MENU(ID_Menu_StartGameCMD, uMod_Frame::OnMenuStartGame)
 
   EVT_MENU(ID_Menu_LoadTemplate, uMod_Frame::OnMenuOpenTemplate)
   EVT_MENU(ID_Menu_SaveTemplate, uMod_Frame::OnMenuSaveTemplate)
@@ -102,10 +101,6 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   MenuMain = new wxMenu;
   MenuHelp = new wxMenu;
 
-  MenuMain->Append ( ID_Menu_StartGame, Language->MenuStartGame);
-  MenuMain->Append ( ID_Menu_StartGameCMD, Language->MenuStartGameCMD);
-  MenuMain->AppendSeparator();
-
   MenuMain->Append( ID_Menu_LoadTemplate, Language->MenuLoadTemplate );
   MenuMain->Append( ID_Menu_SaveTemplate, Language->MenuSaveTemplate );
   MenuMain->Append( ID_Menu_SaveTemplateAs, Language->MenuSaveTemplateAs );
@@ -129,6 +124,31 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   Notebook = new wxNotebook( this, wxID_ANY);
   Notebook->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_MENU));
   MainSizer->Add( (wxWindow*) Notebook, 1, wxEXPAND , 0 );
+
+  LauncherPanel = new wxPanel( Notebook, wxID_ANY);
+  wxBoxSizer *launcherSizer = new wxBoxSizer(wxVERTICAL);
+  wxBoxSizer *launchSizer = new wxBoxSizer(wxHORIZONTAL);
+  LaunchButton = new wxButton( LauncherPanel, ID_Button_Launch, Language->ButtonLaunchGuildWars, wxDefaultPosition, wxSize(220, 40));
+  CommandLineText = new wxTextCtrl( LauncherPanel, wxID_ANY, "", wxDefaultPosition, wxSize(300, 40));
+  CommandLineText->SetToolTip( Language->CommandLine);
+  launchSizer->Add( (wxWindow*) LaunchButton, 0, wxEXPAND|wxRIGHT, 10);
+  launchSizer->Add( (wxWindow*) CommandLineText, 1, wxEXPAND, 0);
+  launcherSizer->Add( launchSizer, 0, wxEXPAND|wxALL, 10);
+
+  wxBoxSizer *locateSizer = new wxBoxSizer(wxHORIZONTAL);
+  LocateButton = new wxButton( LauncherPanel, ID_Button_Locate, Language->ButtonLocateGuildWars, wxDefaultPosition, wxSize(220, 30));
+  ExePathText = new wxTextCtrl( LauncherPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+  locateSizer->Add( (wxWindow*) LocateButton, 0, wxEXPAND|wxRIGHT, 10);
+  locateSizer->Add( (wxWindow*) ExePathText, 1, wxEXPAND, 0);
+  launcherSizer->Add( locateSizer, 0, wxEXPAND|wxLEFT|wxRIGHT|wxBOTTOM, 10);
+
+  LauncherPanel->SetSizer( launcherSizer);
+  Notebook->AddPage( LauncherPanel, Language->TabLauncher, true);
+
+  DefaultPipe.In = INVALID_HANDLE_VALUE;
+  DefaultPipe.Out = INVALID_HANDLE_VALUE;
+  TextureRipperPage = new uMod_GamePage( Notebook, "", "", &DefaultPipe);
+  Notebook->AddPage( TextureRipperPage, Language->TabTextureRipper, false);
 
   ButtonSizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -154,6 +174,8 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
     wxMessageBox( Language->Error_Memory, "ERROR", wxOK|wxICON_ERROR);
   }
   LoadTemplate();
+  LoadLauncherSettings();
+  UpdateLaunchButtonState();
 
   Show( true );
 
@@ -241,17 +263,19 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
     break;
   }
 
-  uMod_GamePage *page = new uMod_GamePage( Notebook, name, save_file, client->Pipe);
-  if (page->LastError.Len()>0)
+  if (TextureRipperPage!=NULL)
   {
-    wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-    delete page;
-    return;
+    TextureRipperPage->SetPipe( &client->Pipe, name);
+    if (save_file.Len()>0)
+    {
+      if (TextureRipperPage->LoadTemplate(save_file))
+      {
+        wxMessageBox(TextureRipperPage->LastError, "ERROR", wxOK|wxICON_ERROR);
+        TextureRipperPage->LastError.Empty();
+      }
+    }
+    Notebook->SetSelection(1);
   }
-  name = name.AfterLast('\\');
-  name = name.AfterLast('/');
-  name = name.BeforeLast('.');
-  Notebook->AddPage( page, name, true);
 
   Clients[NumberOfGames] = client;
   NumberOfGames++;
@@ -263,7 +287,10 @@ void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
   uMod_Client *client = ((uMod_Event&)event).GetClient();
   for (int i=0; i<NumberOfGames; i++) if (Clients[i]==client)
   {
-    Notebook->DeletePage(i);
+    if (TextureRipperPage!=NULL)
+    {
+      TextureRipperPage->SetPipe( &DefaultPipe, TextureRipperPage->GetExeName());
+    }
     Clients[i]->Wait();
     delete Clients[i];
     NumberOfGames--;
@@ -287,8 +314,7 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
 
 void uMod_Frame::OnButtonOpen(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
 
 
@@ -307,8 +333,7 @@ void uMod_Frame::OnButtonOpen(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnButtonPath(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
 
   wxString dir = wxDirSelector( Language->ChooseDir, page->GetSavePath());
@@ -320,8 +345,7 @@ void uMod_Frame::OnButtonPath(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnButtonUpdate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
   if (page->UpdateGame())
   {
@@ -332,8 +356,7 @@ void uMod_Frame::OnButtonUpdate(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
   if (page->ReloadGame())
   {
@@ -347,8 +370,7 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
 
 
@@ -369,8 +391,7 @@ void uMod_Frame::OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
 
   wxString file_name = page->GetTemplateName();
@@ -393,8 +414,7 @@ void uMod_Frame::OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
 
 
@@ -413,8 +433,7 @@ void uMod_Frame::OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnMenuSetDefaultTemplate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
+  uMod_GamePage *page = TextureRipperPage;
   if (page==NULL) return;
 
   wxString exe = page->GetExeName();
@@ -454,8 +473,6 @@ void uMod_Frame::OnMenuLanguage(wxCommandEvent& WXUNUSED(event))
       return;
     }
     MenuBar->SetMenuLabel( 0, Language->MainMenuMain);
-    MenuMain->SetLabel( ID_Menu_StartGame, Language->MenuStartGame);
-    MenuMain->SetLabel( ID_Menu_StartGameCMD, Language->MenuStartGameCMD);
 
     MenuMain->SetLabel( ID_Menu_LoadTemplate, Language->MenuLoadTemplate );
     MenuMain->SetLabel( ID_Menu_SaveTemplate, Language->MenuSaveTemplate );
@@ -476,12 +493,12 @@ void uMod_Frame::OnMenuLanguage(wxCommandEvent& WXUNUSED(event))
     UpdateButton->SetLabel( Language->ButtonUpdate);
     ReloadButton->SetLabel( Language->ButtonReload);
 
-    int num = Notebook->GetPageCount();
-    for (int i=0; i<num; i++)
-    {
-      uMod_GamePage* page = (uMod_GamePage*) Notebook->GetPage(i);
-      page->UpdateLanguage();
-    }
+    LaunchButton->SetLabel( Language->ButtonLaunchGuildWars);
+    LocateButton->SetLabel( Language->ButtonLocateGuildWars);
+    CommandLineText->SetToolTip( Language->CommandLine);
+    if (Notebook->GetPageCount()>0) Notebook->SetPageText( 0, Language->TabLauncher);
+    if (Notebook->GetPageCount()>1) Notebook->SetPageText( 1, Language->TabTextureRipper);
+    if (TextureRipperPage!=NULL) TextureRipperPage->UpdateLanguage();
   }
 }
 
@@ -523,59 +540,27 @@ void uMod_Frame::OnMenuAcknowledgement(wxCommandEvent& WXUNUSED(event))
   wxMessageBox( msg, Language->MenuAcknowledgement, wxOK);
 }
 
-void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
+void uMod_Frame::OnButtonLaunch(wxCommandEvent& WXUNUSED(event))
 {
-  bool use_cmd = false;
-  if (event.GetId() ==  ID_Menu_StartGameCMD) use_cmd = true;
+  wxString exe_path = ExePathText->GetValue();
+  exe_path.Trim();
+  exe_path.Trim(false);
+  if (exe_path.IsEmpty()) return;
 
-  wxArrayString games, cmd, choices;
-
-  GetInjectedGames( games, cmd);
-  int num = games.GetCount();
-
-  choices = games;
-  choices.Add( Language->StartGame);
-
-  int index = wxGetSingleChoiceIndex( Language->MenuStartGame, Language->MenuStartGame, choices);
-
-  if (index < 0) return;
-  else if (index==num)
-  {
-    wxString file_name = wxFileSelector( Language->ChooseGame, "", "", "exe",  "binary (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
-    if ( !file_name.empty() )
-    {
-      bool hit = false;
-      for (int i=0; i<num; i++) if (file_name==games[i]) {hit=true; index=i; break;}
-
-      if (!hit)
-      {
-        games.Add(file_name);
-        cmd.Add("");
-      }
-    }
-    else return;
-  }
-
-  wxString command_line;
-  if (use_cmd)
-  {
-    command_line = cmd[index];
-    command_line = wxGetTextFromUser( Language->CommandLine, Language->CommandLine, command_line);
-    if (!command_line.IsEmpty()) cmd[index] = command_line;
-  }
-
-  SetInjectedGames( games, cmd);
+  wxString command_line = CommandLineText->GetValue();
+  SaveLauncherSettings( exe_path, command_line);
+  if (TextureRipperPage!=NULL) TextureRipperPage->SetExeName(exe_path);
 
   STARTUPINFOW si = {0};
   si.cb = sizeof(STARTUPINFO);
   PROCESS_INFORMATION pi = {0};
 
-  wxString path = games[index].BeforeLast('\\');
+  wxFileName exe_file(exe_path);
+  wxString path = exe_file.GetPath();
   wxString exe;
 
-  if (use_cmd) exe << "\"" << games[index] << "\" " << command_line;
-  else exe = games[index];
-
+  if (!command_line.IsEmpty()) exe << "\"" << exe_path << "\" " << command_line;
+  else exe = exe_path;
 
   bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
                               CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
@@ -585,13 +570,61 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
     return ;
   }
 
-
-  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
-  wxString dll = exe_path.GetPath();
+  wxFileName exe_path_dll(wxStandardPaths::Get().GetExecutablePath());
+  wxString dll = exe_path_dll.GetPath();
   dll.Append( L"\\" uMod_d3d9_DI_dll);
 
   Inject(pi.hProcess, dll.wc_str(), "Nothing");
   ResumeThread(pi.hThread);
+}
+
+void uMod_Frame::OnButtonLocate(wxCommandEvent& WXUNUSED(event))
+{
+  wxString file_name = wxFileSelector( Language->ChooseGame, "", "", "exe",  "binary (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
+  if ( file_name.empty() ) return;
+
+  ExePathText->SetValue( file_name);
+  if (TextureRipperPage!=NULL) TextureRipperPage->SetExeName(file_name);
+  SaveLauncherSettings( file_name, CommandLineText->GetValue());
+  UpdateLaunchButtonState();
+}
+
+void uMod_Frame::UpdateLaunchButtonState(void)
+{
+  bool has_exe = !ExePathText->GetValue().IsEmpty();
+  LaunchButton->Enable( has_exe);
+}
+
+void uMod_Frame::LoadLauncherSettings(void)
+{
+  wxArrayString games, cmd;
+  if (GetInjectedGames( games, cmd) != 0)
+  {
+    LastError.Empty();
+    return;
+  }
+
+  if (games.GetCount()>0)
+  {
+    ExePathText->SetValue( games[0]);
+    CommandLineText->SetValue( cmd[0]);
+    if (TextureRipperPage!=NULL) TextureRipperPage->SetExeName(games[0]);
+  }
+}
+
+void uMod_Frame::SaveLauncherSettings(const wxString &exe_path, const wxString &command_line)
+{
+  wxArrayString games, cmd;
+  if (!exe_path.IsEmpty())
+  {
+    games.Add( exe_path);
+    cmd.Add( command_line);
+  }
+  if (SetInjectedGames( games, cmd))
+  {
+    wxMessageBox( LastError, "ERROR", wxOK|wxICON_ERROR);
+    LastError.Empty();
+  }
 }
 
 

@@ -21,7 +21,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "uMod_Main.h"
 
 
-uMod_Sender::uMod_Sender(PipeStruct &pipe) : Pipe(pipe)
+uMod_Sender::uMod_Sender(PipeStruct *pipe) : Pipe(pipe)
 {
   OldTextures = NULL;
   OldTexturesNum = 0;
@@ -398,10 +398,9 @@ int uMod_Sender::SendToGame( void *msg, unsigned long len)
   if (len==0) return (RETURN_BAD_ARGUMENT);
   unsigned long num;
 
-  if (Pipe.Out==INVALID_HANDLE_VALUE) {LastError << Language->Error_NoPipe; return -1;}
-  bool ret = WriteFile( Pipe.Out, (const void*) msg, len, &num, NULL);
+  if (Pipe==NULL || Pipe->Out==INVALID_HANDLE_VALUE) {LastError << Language->Error_NoPipe; return -1;}
+  bool ret = WriteFile( Pipe->Out, (const void*) msg, len, &num, NULL);
   if (!ret || len!=num) {LastError << Language->Error_WritePipe; return -1;}
-  if (!FlushFileBuffers(Pipe.Out)) {LastError << Language->Error_FlushPipe; return -1;}
+  if (!FlushFileBuffers(Pipe->Out)) {LastError << Language->Error_FlushPipe; return -1;}
   return 0;
 }
-
