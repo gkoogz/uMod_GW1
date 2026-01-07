@@ -53,19 +53,21 @@ uMod_GamePage::uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxS
   SizerKeys[0] = new wxBoxSizer(wxHORIZONTAL);
   SizerKeys[1] = new wxBoxSizer(wxHORIZONTAL);
 
+  wxArrayString key_choices(Language->KeyStrings);
+
   TextKeyBack = new wxTextCtrl(this, wxID_ANY, Language->KeyBack, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   SizerKeys[0]->Add( (wxWindow*) TextKeyBack, 1, wxEXPAND, 0);
-  ChoiceKeyBack = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
+  ChoiceKeyBack = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, key_choices);
   SizerKeys[1]->Add( (wxWindow*) ChoiceKeyBack, 1, wxEXPAND, 0);
 
   TextKeySave = new wxTextCtrl(this, wxID_ANY, Language->KeySave, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   SizerKeys[0]->Add( (wxWindow*) TextKeySave, 1, wxEXPAND, 0);
-  ChoiceKeySave = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
+  ChoiceKeySave = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, key_choices);
   SizerKeys[1]->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
 
   TextKeyNext = new wxTextCtrl(this, wxID_ANY, Language->KeyNext, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   SizerKeys[0]->Add( (wxWindow*) TextKeyNext, 1, wxEXPAND, 0);
-  ChoiceKeyNext = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
+  ChoiceKeyNext = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, key_choices);
   SizerKeys[1]->Add( (wxWindow*) ChoiceKeyNext, 1, wxEXPAND, 0);
 
   MainSizer->Add( SizerKeys[0], 0, wxEXPAND, 0);
