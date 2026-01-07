@@ -403,6 +403,12 @@ int uMod_GamePage::ApplyDefaultMods(void)
   return added;
 }
 
+void uMod_GamePage::ResetConnection(void)
+{
+  Sender.Reset();
+  GameOld.Init();
+}
+
 void uMod_GamePage::ClearModsList(bool clear_defaults)
 {
   for (int i=0; i<NumberOfEntry; i++)

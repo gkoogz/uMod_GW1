@@ -69,6 +69,7 @@ private:
   int LoadDefaultModsState(void);
   int SaveDefaultModsState(void);
   int ApplyDefaultMods(void);
+  void ResetConnection(void);
   void ClearModsList(bool clear_defaults);
   int AddTextureInternal(const wxString &file_name, bool update_game);
 

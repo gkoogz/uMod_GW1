@@ -186,6 +186,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
   ActivePipe.In = client->Pipe.In;
   ActivePipe.Out = client->Pipe.Out;
   GamePage->SetGameInfo( name, "");
+  GamePage->ResetConnection();
   if (GamePage->ReloadGame())
   {
     wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);

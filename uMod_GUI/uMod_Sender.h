@@ -32,6 +32,7 @@ public:
   ~uMod_Sender(void);
 
   int Send( const uMod_GameInfo &game, const uMod_GameInfo &game_old, bool force=false, wxArrayString *comments=NULL);
+  void Reset(void);
 
   wxString LastError;
 
