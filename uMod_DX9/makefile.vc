@@ -47,6 +47,7 @@ headers = uMod_Main.h \
 
 $(bin)\$(dll): $(objects) $(obj_dir_marker)
 	$(CLINK) $(LFLAGS) $(objects) /OUT:$(bin)\$(dll)
+	-if not exist ..\uMod_GUI\bin mkdir ..\uMod_GUI\bin
 	copy $(bin)\$(dll) ..\uMod_GUI\bin\$(dll)
 
 $(obj_dir_marker):
