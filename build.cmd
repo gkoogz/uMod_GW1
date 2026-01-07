@@ -3,6 +3,10 @@ setlocal enabledelayedexpansion
 
 set ROOT_DIR=%~dp0
 
+echo Cleaning uMod DX9 bin...
+if exist "%ROOT_DIR%uMod_DX9\bin" rmdir /s /q "%ROOT_DIR%uMod_DX9\bin"
+if not exist "%ROOT_DIR%uMod_DX9\bin" mkdir "%ROOT_DIR%uMod_DX9\bin"
+
 echo Building uMod DX9 DLL...
 pushd "%ROOT_DIR%uMod_DX9"
 nmake -f makefile.vc
@@ -20,6 +24,10 @@ if exist "%ROOT_DIR%uMod_DX9\bin\uMod_d3d9_DI.dll" (
   echo DX9 DLL not found in uMod_DX9\bin.
   exit /b 1
 )
+
+echo Cleaning uMod GUI bin...
+if exist "%ROOT_DIR%uMod_GUI\bin" rmdir /s /q "%ROOT_DIR%uMod_GUI\bin"
+if not exist "%ROOT_DIR%uMod_GUI\bin" mkdir "%ROOT_DIR%uMod_GUI\bin"
 
 echo Building uMod GUI...
 pushd "%ROOT_DIR%uMod_GUI"
