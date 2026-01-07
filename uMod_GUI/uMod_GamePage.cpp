@@ -78,6 +78,8 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   openRow->Add( (wxWindow*) OpenButton, 0, wxRIGHT, 10);
   openRow->Add( (wxWindow*) OpenButtonHint, 0, wxALIGN_CENTER_VERTICAL, 0);
   LauncherSizer->Add( openRow, 0, wxALIGN_LEFT, 0);
+  LoadDefaultMods = new wxCheckBox( LauncherPanel, wxID_ANY, Language->LoadDefaultMods);
+  LauncherSizer->Add( (wxWindow*) LoadDefaultMods, 0, wxTOP, 6);
   LauncherSizer->AddSpacer(10);
 
   ModsSizer = new wxStaticBoxSizer(wxVERTICAL, LauncherPanel, Language->LoadedMods);
@@ -86,10 +88,6 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherPanel->SetSizer(LauncherSizer);
   LauncherPanel->SetScrollRate(0, 20);
   LauncherSizer->FitInside(LauncherPanel);
-
-  LoadDefaultMods = new wxCheckBox( ModMakerPanel, wxID_ANY, Language->LoadDefaultMods);
-  ModMakerSizer->Add( (wxWindow*) LoadDefaultMods, 0, wxEXPAND, 0);
-  ModMakerSizer->AddSpacer(10);
 
   SizerKeys[0] = new wxBoxSizer(wxHORIZONTAL);
   SizerKeys[1] = new wxBoxSizer(wxHORIZONTAL);
@@ -178,6 +176,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   UpdateLaunchState();
   LoadDefaultModsList();
   if (LoadDefaultMods->GetValue()) ApplyDefaultMods();
+  else ClearModsList();
 }
 
 uMod_GamePage::~uMod_GamePage(void)
@@ -199,11 +198,7 @@ uMod_GamePage::~uMod_GamePage(void)
 void uMod_GamePage::EnableOpenButton( bool enable)
 {
   if (OpenButton!=NULL) OpenButton->Enable(enable);
-  if (OpenButtonHint!=NULL)
-  {
-    if (enable) OpenButtonHint->Hide();
-    else OpenButtonHint->Show();
-  }
+  if (OpenButtonHint!=NULL) OpenButtonHint->Hide();
   if (LauncherPanel!=NULL)
   {
     LauncherPanel->Layout();
@@ -213,7 +208,6 @@ void uMod_GamePage::EnableOpenButton( bool enable)
 
 void uMod_GamePage::EnableGameControls( bool enable)
 {
-  EnableOpenButton( enable);
   if (DirectoryButton!=NULL) DirectoryButton->Enable(enable);
   if (UpdateButton!=NULL) UpdateButton->Enable(enable);
   if (ReloadButton!=NULL) ReloadButton->Enable(enable);
@@ -278,14 +272,27 @@ void uMod_GamePage::OnModCheck(wxCommandEvent& WXUNUSED(event))
 
 void uMod_GamePage::OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event))
 {
-  SaveDefaultModsList();
+  if (LoadDefaultMods!=NULL && LoadDefaultMods->GetValue())
+  {
+    SaveDefaultModsList();
+    ApplyDefaultMods();
+  }
+  else
+  {
+    ClearModsList();
+    SaveDefaultModsList();
+  }
 }
 
 int uMod_GamePage::LoadDefaultModsList(void)
 {
   DefaultMods.Empty();
   wxFile file;
-  if (!file.Access( DEFAULT_MODS_FILE, wxFile::read)) return 0;
+  if (!file.Access( DEFAULT_MODS_FILE, wxFile::read))
+  {
+    if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
+    return 0;
+  }
   file.Open( DEFAULT_MODS_FILE, wxFile::read);
   if (!file.IsOpened()) return 0;
 
@@ -366,6 +373,35 @@ int uMod_GamePage::ApplyDefaultMods(void)
     }
   }
   return added;
+}
+
+void uMod_GamePage::ClearModsList(void)
+{
+  for (int i=0; i<NumberOfEntry; i++)
+  {
+    Unbind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonUp, this, ID_Button_Texture+3*i);
+    Unbind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonDown, this, ID_Button_Texture+3*i+1);
+    Unbind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonDelete, this, ID_Button_Texture+3*i+2);
+
+    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckBoxes[i]);
+    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckButtonUp[i]);
+    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckButtonDown[i]);
+    CheckBoxHSizers[i]->Detach( (wxWindow*) CheckButtonDelete[i]);
+
+    ModsSizer->Detach( CheckBoxHSizers[i]);
+
+    delete CheckBoxes[i];
+    delete CheckButtonUp[i];
+    delete CheckButtonDown[i];
+    delete CheckButtonDelete[i];
+    delete CheckBoxHSizers[i];
+  }
+  NumberOfEntry = 0;
+  Files.Clear();
+  DefaultMods.Clear();
+
+  LauncherPanel->Layout();
+  LauncherSizer->FitInside(LauncherPanel);
 }
 
 void uMod_GamePage::UpdateLaunchState(void)

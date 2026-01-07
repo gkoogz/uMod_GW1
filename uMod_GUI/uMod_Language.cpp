@@ -281,7 +281,7 @@ int uMod_Language::LoadDefault(void)
   ButtonReload = "Update (reload)";
   ButtonLaunch = "Launch Guild Wars";
   ButtonLocateExe = "Locate Guild Wars Executable";
-  SelectModsHint = "Game must be running to select mods.";
+  SelectModsHint = "Mods will be injected when the game launches.";
   LoadDefaultMods = "Load these mods by default.";
 
   ChooseFile = "Choose a file";
