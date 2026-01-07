@@ -610,14 +610,14 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	}
 	DIHostTraceFormat(L"Inject: thread=%p", hThread);
 
-	DWORD waitResult = WaitForSingleObject(hThread, 10000);
+	DWORD waitResult = WaitForSingleObject(hThread, 0);
 	if (waitResult == WAIT_FAILED)
 	{
 		DIHostTraceFormat(L"Inject warning: WaitForSingleObject err=%lu", GetLastError());
 	}
 	else if (waitResult == WAIT_TIMEOUT)
 	{
-		DIHostTrace(L"Inject warning: WaitForSingleObject timeout");
+		DIHostTrace(L"Inject warning: WaitForSingleObject timeout (thread still running)");
 	}
 	else
 	{
@@ -636,7 +636,7 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	// Free the memory in the process that we allocated
 	if (waitResult == WAIT_TIMEOUT)
 	{
-		DIHostTrace(L"Inject: skipping VirtualFreeEx due to timeout");
+		DIHostTrace(L"Inject: leaving codecave allocated due to timeout");
 	}
 	else if (!VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE))
 	{
