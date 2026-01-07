@@ -28,8 +28,10 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 class uMod_Sender
 {
 public:
-  uMod_Sender(PipeStruct &pipe);
+  uMod_Sender(PipeStruct *pipe);
   ~uMod_Sender(void);
+
+  void SetPipe(PipeStruct *pipe) {Pipe = pipe;}
 
   int Send( const uMod_GameInfo &game, const uMod_GameInfo &game_old, bool force=false, wxArrayString *comments=NULL);
 
@@ -54,7 +56,7 @@ private:
   int AddZip( AddTextureClass *tex, wxString file, bool add, bool force, bool tpf);
   int AddContent( char* buffer, unsigned int len, const char* pw, AddTextureClass *tex, bool add, bool force);
 
-  PipeStruct &Pipe;
+  PipeStruct *Pipe;
   AddTextureClass *OldTextures;
   int OldTexturesNum;
 };

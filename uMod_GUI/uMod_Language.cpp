@@ -199,6 +199,12 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, ButtonDirectory)
     CheckEntry( command, msg, ButtonUpdate)
     CheckEntry( command, msg, ButtonReload)
+    CheckEntry( command, msg, ButtonLaunchGuildWars)
+    CheckEntry( command, msg, ButtonLocateGuildWars)
+    CheckEntry( command, msg, TabLauncher)
+    CheckEntry( command, msg, TabTextureRipper)
+    CheckEntry( command, msg, CommandLineLabel)
+    CheckEntry( command, msg, CommandLineHelpTitle)
     CheckEntry( command, msg, ChooseFile)
     CheckEntry( command, msg, ChooseDir)
     CheckEntry( command, msg, TextCtrlTemplate)
@@ -271,6 +277,12 @@ int uMod_Language::LoadDefault(void)
   ButtonDirectory = "Set save directory";
   ButtonUpdate = "Update";
   ButtonReload = "Update (reload)";
+  ButtonLaunchGuildWars = "Launch Guild Wars";
+  ButtonLocateGuildWars = "Locate Guild Wars Executable";
+  TabLauncher = "Launcher";
+  TabTextureRipper = "Texture Ripper";
+  CommandLineLabel = "Command Line Arguments (optional):";
+  CommandLineHelpTitle = "Command Line Arguments";
 
   ChooseFile = "Choose a file";
   ChooseDir = "Choose a directory";

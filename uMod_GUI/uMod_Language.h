@@ -52,6 +52,12 @@ public:
   wxString ButtonDirectory;
   wxString ButtonUpdate;
   wxString ButtonReload;
+  wxString ButtonLaunchGuildWars;
+  wxString ButtonLocateGuildWars;
+  wxString TabLauncher;
+  wxString TabTextureRipper;
+  wxString CommandLineLabel;
+  wxString CommandLineHelpTitle;
 
   wxString ChooseFile;
   wxString ChooseDir;

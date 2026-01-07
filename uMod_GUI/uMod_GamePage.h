@@ -26,7 +26,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 class uMod_GamePage : public wxScrolledWindow
 {
 public:
-  uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct &pipe);
+  uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct *pipe);
   virtual ~uMod_GamePage(void);
 
   int AddTexture( const wxString &file_name);
@@ -36,6 +36,9 @@ public:
 
   int SaveTemplate( const wxString &file_name);
   int LoadTemplate( const wxString &file_name);
+
+  void SetPipe(PipeStruct *pipe, const wxString &exe);
+  void SetExeName(const wxString &exe) {ExeName = exe;}
 
   wxString GetExeName(void) {return ExeName;}
   wxString GetTemplateName(void) {return TemplateName;}

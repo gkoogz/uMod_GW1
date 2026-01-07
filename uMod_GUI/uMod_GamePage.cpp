@@ -20,7 +20,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/tooltip.h>
 
 
-uMod_GamePage::uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct &pipe)
+uMod_GamePage::uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct *pipe)
   : wxScrolledWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL), Sender(pipe)
 {
   ExeName = exe;
@@ -109,6 +109,12 @@ uMod_GamePage::uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxS
   MainSizer->FitInside(this);
 
   if (TemplateName.Len()>0) LoadTemplate(TemplateName);
+}
+
+void uMod_GamePage::SetPipe(PipeStruct *pipe, const wxString &exe)
+{
+  Sender.SetPipe(pipe);
+  ExeName = exe;
 }
 
 uMod_GamePage::~uMod_GamePage(void)
