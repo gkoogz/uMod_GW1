@@ -186,7 +186,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
   ActivePipe.In = client->Pipe.In;
   ActivePipe.Out = client->Pipe.Out;
   GamePage->SetGameInfo( name, "");
-  if (GamePage->UpdateGame())
+  if (GamePage->ReloadGame())
   {
     wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
     GamePage->LastError.Empty();
@@ -215,7 +215,6 @@ void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
     for (int j=i; j<NumberOfGames; j++) Clients[j] = Clients[j+1];
 
     if (NumberOfGames==0) DeactivateGamesControl();
-    if (GamePage!=NULL) GamePage->ReloadGame();
     return;
   }
 }
