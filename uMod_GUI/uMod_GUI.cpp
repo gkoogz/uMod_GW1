@@ -215,6 +215,7 @@ void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
     for (int j=i; j<NumberOfGames; j++) Clients[j] = Clients[j+1];
 
     if (NumberOfGames==0) DeactivateGamesControl();
+    if (GamePage!=NULL) GamePage->ReloadGame();
     return;
   }
 }
