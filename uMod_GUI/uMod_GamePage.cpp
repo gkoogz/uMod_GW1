@@ -26,6 +26,7 @@ static const wchar_t* DEFAULT_MODS_FILE = L"uMod_DefaultMods.txt";
 uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame)
   : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize), Sender(pipe)
 {
+  (void)save;
   MainFrame = frame;
   ExeName = exe;
 
@@ -396,7 +397,8 @@ int uMod_GamePage::PersistLauncherSettings(const wxString &exe_path, const wxStr
   }
   else
   {
-    if (index>=cmd.GetCount()) cmd.Add( command_line);
+    int cmd_count = cmd.GetCount();
+    if (index>=cmd_count) cmd.Add( command_line);
     else cmd[index] = command_line;
   }
   return MainFrame->SetInjectedGames(games, cmd);
@@ -438,7 +440,7 @@ int uMod_GamePage::AddTextureInternal( const wxString &file_name, bool update_ga
   CheckBoxes[NumberOfEntry] = new wxCheckBox( LauncherPanel, -1, file_name);
   CheckBoxes[NumberOfEntry]->SetValue( true);
   CheckBoxes[NumberOfEntry]->SetToolTip( tool_tip);
-  CheckBoxes[NumberOfEntry]->Bind( wxEVT_CHECKBOX, &uMod_GamePage::OnModCheck, this);
+  CheckBoxes[NumberOfEntry]->Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnModCheck, this);
 
   wchar_t button_txt[2];
   button_txt[0] = 8657;
