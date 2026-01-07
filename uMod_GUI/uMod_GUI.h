@@ -30,6 +30,9 @@ public:
   uMod_Frame(const wxString& title, uMod_Settings &set);
   ~uMod_Frame(void);
 
+  int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
+  int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
+  int LaunchGame(const wxString &game_path, const wxString &command_line);
 
 
   void OnAddGame( wxCommandEvent &event);
@@ -65,15 +68,12 @@ private:
   uMod_Settings Settings;
   int KillServer(void);
 
-  int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
-  int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
-
   uMod_Server *Server;
 
-  wxNotebook *Notebook;
+  uMod_GamePage *GamePage;
+  PipeStruct ActivePipe;
 
 
-  wxButton *OpenButton;
   wxButton *DirectoryButton;
   wxButton *UpdateButton;
   wxButton *ReloadButton;

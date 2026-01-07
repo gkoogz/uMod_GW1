@@ -126,18 +126,17 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
 
   MainSizer = new wxBoxSizer(wxVERTICAL);
 
-  Notebook = new wxNotebook( this, wxID_ANY);
-  Notebook->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_MENU));
-  MainSizer->Add( (wxWindow*) Notebook, 1, wxEXPAND , 0 );
+  ActivePipe.In = INVALID_HANDLE_VALUE;
+  ActivePipe.Out = INVALID_HANDLE_VALUE;
+  GamePage = new uMod_GamePage( this, "", "", ActivePipe, this);
+  MainSizer->Add( (wxWindow*) GamePage, 1, wxEXPAND , 0 );
 
   ButtonSizer = new wxBoxSizer(wxHORIZONTAL);
 
-  OpenButton = new wxButton( this, ID_Button_Open, Language->ButtonOpen, wxDefaultPosition, wxSize(100,24));
   DirectoryButton = new wxButton( this, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(100,24));
   UpdateButton = new wxButton( this, ID_Button_Update, Language->ButtonUpdate, wxDefaultPosition, wxSize(100,24));
   ReloadButton = new wxButton( this, ID_Button_Reload, Language->ButtonReload, wxDefaultPosition, wxSize(100,24));
 
-  ButtonSizer->Add( (wxWindow*) OpenButton, 1, wxEXPAND, 0);
   ButtonSizer->Add( (wxWindow*) DirectoryButton, 1, wxEXPAND, 0);
   ButtonSizer->Add( (wxWindow*) UpdateButton, 1, wxEXPAND, 0);
   ButtonSizer->Add( (wxWindow*) ReloadButton, 1, wxEXPAND, 0);
@@ -154,6 +153,7 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
     wxMessageBox( Language->Error_Memory, "ERROR", wxOK|wxICON_ERROR);
   }
   LoadTemplate();
+  GamePage->LoadLauncherSettings();
 
   Show( true );
 
@@ -241,17 +241,14 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
     break;
   }
 
-  uMod_GamePage *page = new uMod_GamePage( Notebook, name, save_file, client->Pipe);
-  if (page->LastError.Len()>0)
+  ActivePipe.In = client->Pipe.In;
+  ActivePipe.Out = client->Pipe.Out;
+  GamePage->SetGameInfo( name, save_file);
+  if (GamePage->LastError.Len()>0)
   {
-    wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-    delete page;
-    return;
+    wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+    GamePage->LastError.Empty();
   }
-  name = name.AfterLast('\\');
-  name = name.AfterLast('/');
-  name = name.BeforeLast('.');
-  Notebook->AddPage( page, name, true);
 
   Clients[NumberOfGames] = client;
   NumberOfGames++;
@@ -263,7 +260,8 @@ void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
   uMod_Client *client = ((uMod_Event&)event).GetClient();
   for (int i=0; i<NumberOfGames; i++) if (Clients[i]==client)
   {
-    Notebook->DeletePage(i);
+    ActivePipe.In = INVALID_HANDLE_VALUE;
+    ActivePipe.Out = INVALID_HANDLE_VALUE;
     Clients[i]->Wait();
     delete Clients[i];
     NumberOfGames--;
@@ -287,58 +285,50 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
 
 void uMod_Frame::OnButtonOpen(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
+  if (GamePage==NULL) return;
 
 
   //wxString file_name = wxFileSelector( Language->ChooseFile, page->GetOpenPath(), "", "*.*",  "textures (*.dds)|*.dds|zip (*.zip)|*.zip|tpf (*.tpf)|*.tpf", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
-  wxString file_name = wxFileSelector( Language->ChooseFile, page->GetOpenPath(), "", "",  "", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
+  wxString file_name = wxFileSelector( Language->ChooseFile, GamePage->GetOpenPath(), "", "",  "", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
   if ( !file_name.empty() )
   {
-    page->SetOpenPath(file_name.BeforeLast( '/'));
-    if (page->AddTexture( file_name))
+    GamePage->SetOpenPath(file_name.BeforeLast( '/'));
+    if (GamePage->AddTexture( file_name))
     {
-      wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-      page->LastError.Empty();
+      wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+      GamePage->LastError.Empty();
     }
   }
 }
 
 void uMod_Frame::OnButtonPath(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
+  if (GamePage==NULL) return;
 
-  wxString dir = wxDirSelector( Language->ChooseDir, page->GetSavePath());
+  wxString dir = wxDirSelector( Language->ChooseDir, GamePage->GetSavePath());
   if ( !dir.empty() )
   {
-    page->SetSavePath( dir);
+    GamePage->SetSavePath( dir);
   }
 }
 
 void uMod_Frame::OnButtonUpdate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
-  if (page->UpdateGame())
+  if (GamePage==NULL) return;
+  if (GamePage->UpdateGame())
   {
-    wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-    page->LastError.Empty();
+    wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+    GamePage->LastError.Empty();
   }
 }
 
 void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
-  if (page->ReloadGame())
+  if (GamePage==NULL) return;
+  if (GamePage->ReloadGame())
   {
-    wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-    page->LastError.Empty();
+    wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+    GamePage->LastError.Empty();
   }
 }
 
@@ -347,9 +337,7 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 
 void uMod_Frame::OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
+  if (GamePage==NULL) return;
 
 
   //wxString file_name = wxFileSelector( Language->ChooseFile, page->GetOpenPath(), "", "*.*",  "textures (*.dds)|*.dds|zip (*.zip)|*.zip|tpf (*.tpf)|*.tpf", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
@@ -359,21 +347,19 @@ void uMod_Frame::OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event))
   wxString file_name = wxFileSelector( Language->ChooseFile, dir, "", "*.txt",  "text (*.txt)|*.txt", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
   if ( !file_name.empty() )
   {
-    if (page->LoadTemplate( file_name))
+    if (GamePage->LoadTemplate( file_name))
     {
-      wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-      page->LastError.Empty();
+      wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+      GamePage->LastError.Empty();
     }
   }
 }
 
 void uMod_Frame::OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
+  if (GamePage==NULL) return;
 
-  wxString file_name = page->GetTemplateName();
+  wxString file_name = GamePage->GetTemplateName();
 
   if ( file_name.empty() )
   {
@@ -383,19 +369,17 @@ void uMod_Frame::OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event))
   }
   if ( !file_name.empty() )
   {
-    if (page->SaveTemplate(file_name))
+    if (GamePage->SaveTemplate(file_name))
     {
-      wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-      page->LastError.Empty();
+      wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+      GamePage->LastError.Empty();
     }
   }
 }
 
 void uMod_Frame::OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
+  if (GamePage==NULL) return;
 
 
   wxString dir = wxGetCwd();
@@ -403,22 +387,20 @@ void uMod_Frame::OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event))
   wxString file_name = wxFileSelector( Language->ChooseFile, dir, "", "*.txt",  "text (*.txt)|*.txt", wxFD_SAVE | wxFD_OVERWRITE_PROMPT, this);
   if ( !file_name.empty() )
   {
-    if (page->SaveTemplate(file_name))
+    if (GamePage->SaveTemplate(file_name))
     {
-      wxMessageBox(page->LastError, "ERROR", wxOK|wxICON_ERROR);
-      page->LastError.Empty();
+      wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+      GamePage->LastError.Empty();
     }
   }
 }
 
 void uMod_Frame::OnMenuSetDefaultTemplate(wxCommandEvent& WXUNUSED(event))
 {
-  if (Notebook->GetPageCount()==0) return;
-  uMod_GamePage *page = (uMod_GamePage*) Notebook->GetCurrentPage();
-  if (page==NULL) return;
+  if (GamePage==NULL) return;
 
-  wxString exe = page->GetExeName();
-  wxString file = page->GetTemplateName();
+  wxString exe = GamePage->GetExeName();
+  wxString file = GamePage->GetTemplateName();
 
   int num = SaveFile_Exe.GetCount();
   bool hit = false;
@@ -471,17 +453,11 @@ void uMod_Frame::OnMenuLanguage(wxCommandEvent& WXUNUSED(event))
     MenuHelp->SetLabel( ID_Menu_Acknowledgement, Language->MenuAcknowledgement);
 
 
-    OpenButton->SetLabel( Language->ButtonOpen);
     DirectoryButton->SetLabel( Language->ButtonDirectory);
     UpdateButton->SetLabel( Language->ButtonUpdate);
     ReloadButton->SetLabel( Language->ButtonReload);
 
-    int num = Notebook->GetPageCount();
-    for (int i=0; i<num; i++)
-    {
-      uMod_GamePage* page = (uMod_GamePage*) Notebook->GetPage(i);
-      page->UpdateLanguage();
-    }
+    GamePage->UpdateLanguage();
   }
 }
 
@@ -566,25 +542,30 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
   SetInjectedGames( games, cmd);
 
+  if (use_cmd) LaunchGame( games[index], command_line);
+  else LaunchGame( games[index], "");
+}
+
+int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_line)
+{
+  if (game_path.IsEmpty()) return -1;
   STARTUPINFOW si = {0};
   si.cb = sizeof(STARTUPINFO);
   PROCESS_INFORMATION pi = {0};
 
-  wxString path = games[index].BeforeLast('\\');
+  wxString path = game_path.BeforeLast('\\');
   wxString exe;
 
-  if (use_cmd) exe << "\"" << games[index] << "\" " << command_line;
-  else exe = games[index];
-
+  if (!command_line.IsEmpty()) exe << "\"" << game_path << "\" " << command_line;
+  else exe = game_path;
 
   bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
                               CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
   if(!result)
   {
     wxMessageBox( Language->Error_ProcessNotStarted, "ERROR",  wxOK|wxICON_ERROR);
-    return ;
+    return -1;
   }
-
 
   wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
   wxString dll = exe_path.GetPath();
@@ -592,6 +573,7 @@ void uMod_Frame::OnMenuStartGame(wxCommandEvent& event)
 
   Inject(pi.hProcess, dll.wc_str(), "Nothing");
   ResumeThread(pi.hThread);
+  return 0;
 }
 
 
@@ -604,10 +586,10 @@ int uMod_Frame::ActivateGamesControl(void)
   MenuMain->Enable( ID_Menu_SetDefaultTemplate, true);
 
 
-  OpenButton->Enable( true);
   DirectoryButton->Enable( true);
   UpdateButton->Enable( true);
   ReloadButton->Enable( true);
+  if (GamePage!=NULL) GamePage->EnableOpenButton( true);
 
   return 0;
 }
@@ -620,10 +602,10 @@ int uMod_Frame::DeactivateGamesControl(void)
   MenuMain->Enable( ID_Menu_SetDefaultTemplate, false);
 
 
-  OpenButton->Enable( false);
   DirectoryButton->Enable( false);
   UpdateButton->Enable( false);
   ReloadButton->Enable( false);
+  if (GamePage!=NULL) GamePage->EnableOpenButton( false);
   return 0;
 }
 

@@ -199,12 +199,18 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, ButtonDirectory)
     CheckEntry( command, msg, ButtonUpdate)
     CheckEntry( command, msg, ButtonReload)
+    CheckEntry( command, msg, ButtonLaunch)
+    CheckEntry( command, msg, ButtonLocateExe)
     CheckEntry( command, msg, ChooseFile)
     CheckEntry( command, msg, ChooseDir)
     CheckEntry( command, msg, TextCtrlTemplate)
     CheckEntry( command, msg, CheckBoxSaveSingleTexture)
     CheckEntry( command, msg, CheckBoxSaveAllTextures)
     CheckEntry( command, msg, TextCtrlSavePath)
+    CheckEntry( command, msg, CommandLineHint)
+    CheckEntry( command, msg, TabLauncher)
+    CheckEntry( command, msg, TabModMaker)
+    CheckEntry( command, msg, LoadedMods)
     CheckEntry( command, msg, SelectLanguage)
     CheckEntry( command, msg, StartGame)
     CheckEntry( command, msg, CommandLine)
@@ -271,6 +277,8 @@ int uMod_Language::LoadDefault(void)
   ButtonDirectory = "Set save directory";
   ButtonUpdate = "Update";
   ButtonReload = "Update (reload)";
+  ButtonLaunch = "Launch Guild Wars";
+  ButtonLocateExe = "Locate Guild Wars Executable";
 
   ChooseFile = "Choose a file";
   ChooseDir = "Choose a directory";
@@ -279,6 +287,10 @@ int uMod_Language::LoadDefault(void)
   CheckBoxSaveSingleTexture = "Save single texture";
   CheckBoxSaveAllTextures = "Save all textures";
   TextCtrlSavePath = "Save path:";
+  CommandLineHint = "Command line arguments...";
+  TabLauncher = "Launcher";
+  TabModMaker = "Mod Maker";
+  LoadedMods = "Loaded Mods";
 
   SelectLanguage = "Select a language.";
 

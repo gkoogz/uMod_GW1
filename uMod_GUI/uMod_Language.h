@@ -52,6 +52,8 @@ public:
   wxString ButtonDirectory;
   wxString ButtonUpdate;
   wxString ButtonReload;
+  wxString ButtonLaunch;
+  wxString ButtonLocateExe;
 
   wxString ChooseFile;
   wxString ChooseDir;
@@ -60,6 +62,10 @@ public:
   wxString CheckBoxSaveSingleTexture;
   wxString CheckBoxSaveAllTextures;
   wxString TextCtrlSavePath;
+  wxString CommandLineHint;
+  wxString TabLauncher;
+  wxString TabModMaker;
+  wxString LoadedMods;
 
   wxString SelectLanguage;
 

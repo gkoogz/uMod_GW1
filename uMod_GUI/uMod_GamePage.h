@@ -23,10 +23,10 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "uMod_Main.h"
 
 // this page is opened if a game is started.
-class uMod_GamePage : public wxScrolledWindow
+class uMod_GamePage : public wxPanel
 {
 public:
-  uMod_GamePage( wxNotebook *parent, const wxString &exe, const wxString &save, PipeStruct &pipe);
+  uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame);
   virtual ~uMod_GamePage(void);
 
   int AddTexture( const wxString &file_name);
@@ -36,6 +36,10 @@ public:
 
   int SaveTemplate( const wxString &file_name);
   int LoadTemplate( const wxString &file_name);
+
+  int LoadLauncherSettings(void);
+  void SetGameInfo( const wxString &exe, const wxString &save);
+  void EnableOpenButton( bool enable);
 
   wxString GetExeName(void) {return ExeName;}
   wxString GetTemplateName(void) {return TemplateName;}
@@ -56,6 +60,11 @@ public:
   wxString LastError;
 
 private:
+  void OnButtonLaunch(wxCommandEvent& WXUNUSED(event));
+  void OnButtonLocateExe(wxCommandEvent& WXUNUSED(event));
+  void UpdateLaunchState(void);
+  int PersistLauncherSettings(const wxString &exe_path, const wxString &command_line);
+  void SetExePath(const wxString &path);
 
   int GetSettings(void);
   int SetColour( wxTextCtrl** txt, int *colour);
@@ -78,6 +87,20 @@ private:
   wxTextCtrl *TextureColour[4];
 
   wxBoxSizer *MainSizer;
+  wxBoxSizer *LauncherSizer;
+  wxBoxSizer *ModMakerSizer;
+  wxStaticBoxSizer *ModsSizer;
+
+  wxNotebook *Notebook;
+  wxScrolledWindow *LauncherPanel;
+  wxScrolledWindow *ModMakerPanel;
+
+  wxButton *LaunchButton;
+  wxTextCtrl *CommandLine;
+  wxButton *LocateExeButton;
+  wxTextCtrl *ExePath;
+  wxStaticText *ExeStatus;
+  wxButton *OpenButton;
 
   wxTextCtrl *TemplateFile;
   wxCheckBox *SaveAllTextures;
@@ -99,6 +122,7 @@ private:
   uMod_GameInfo GameOld;
 
   uMod_Sender Sender;
+  uMod_Frame *MainFrame;
 
 
   //DECLARE_EVENT_TABLE();
