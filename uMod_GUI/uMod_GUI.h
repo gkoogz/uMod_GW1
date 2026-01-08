@@ -30,6 +30,10 @@ public:
   uMod_Frame(const wxString& title, uMod_Settings &set);
   ~uMod_Frame(void);
 
+  int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
+  int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
+  int LaunchGame(const wxString &game_path, const wxString &command_line);
+  bool IsGameActive(void) const;
 
 
   void OnAddGame( wxCommandEvent &event);
@@ -43,20 +47,6 @@ public:
   void OnButtonUpdate(wxCommandEvent& WXUNUSED(event));
   void OnButtonReload(wxCommandEvent& WXUNUSED(event));
 
-  void OnMenuStartGame( wxCommandEvent &event);
-
-  void OnMenuOpenTemplate(wxCommandEvent& WXUNUSED(event));
-  void OnMenuSaveTemplate(wxCommandEvent& WXUNUSED(event));
-  void OnMenuSaveTemplateAs(wxCommandEvent& WXUNUSED(event));
-  void OnMenuSetDefaultTemplate(wxCommandEvent& WXUNUSED(event));
-  void OnMenuLanguage(wxCommandEvent& WXUNUSED(event));
-
-  void OnMenuExit(wxCommandEvent& WXUNUSED(event));
-
-  void OnMenuHelp(wxCommandEvent& WXUNUSED(event));
-  void OnMenuAbout(wxCommandEvent& WXUNUSED(event));
-  void OnMenuAcknowledgement(wxCommandEvent& WXUNUSED(event));
-
 private:
 
   int ActivateGamesControl(void);
@@ -65,36 +55,18 @@ private:
   uMod_Settings Settings;
   int KillServer(void);
 
-  int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
-  int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
-
   uMod_Server *Server;
 
-  wxNotebook *Notebook;
+  uMod_GamePage *GamePage;
+  PipeStruct ActivePipe;
 
-
-  wxButton *OpenButton;
-  wxButton *DirectoryButton;
-  wxButton *UpdateButton;
-  wxButton *ReloadButton;
-
-
-  wxMenuBar *MenuBar;
-  wxMenu *MenuMain;
-  wxMenu *MenuHelp;
 
   wxBoxSizer *MainSizer;
-  wxBoxSizer *ButtonSizer;
 
 
   int NumberOfGames;
   int MaxNumberOfGames;
   uMod_Client **Clients;
-
-  int LoadTemplate(void);
-  int SaveTemplate(void);
-  wxArrayString SaveFile_Exe;
-  wxArrayString SaveFile_Name;
 
   wxString LastError;
 

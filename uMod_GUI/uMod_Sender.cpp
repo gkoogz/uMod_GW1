@@ -35,6 +35,16 @@ uMod_Sender::~uMod_Sender(void)
   if (OldTextures!=NULL) delete [] OldTextures;
 }
 
+void uMod_Sender::Reset(void)
+{
+  OldTexturesNum = 0;
+  if (OldTextures!=NULL)
+  {
+    delete [] OldTextures;
+    OldTextures = NULL;
+  }
+}
+
 
 int uMod_Sender::Send( const uMod_GameInfo &game, const uMod_GameInfo &game_old, bool force, wxArrayString *comments)
 {
@@ -404,4 +414,3 @@ int uMod_Sender::SendToGame( void *msg, unsigned long len)
   if (!FlushFileBuffers(Pipe.Out)) {LastError << Language->Error_FlushPipe; return -1;}
   return 0;
 }
-
