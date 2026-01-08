@@ -22,6 +22,8 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #define uMod_GAMEPAGE_H_
 #include "uMod_Main.h"
 
+class wxListCtrl;
+
 // this page is opened if a game is started.
 class uMod_GamePage : public wxPanel
 {
