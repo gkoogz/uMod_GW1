@@ -228,7 +228,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
   Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSavePackage, this, SavePackageButton->GetId());
-  Bind( wxEVT_LIST_ITEM_SELECTED, &uMod_GamePage::OnSavedTextureClick, this, SavedTexturesList->GetId());
+  Bind( wxEVT_COMMAND_LIST_ITEM_SELECTED, &uMod_GamePage::OnSavedTextureClick, this, SavedTexturesList->GetId());
 
   UpdateLaunchState();
   LoadDefaultModsList();
