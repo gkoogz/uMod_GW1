@@ -50,8 +50,9 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   ModMakerSizer = new wxBoxSizer(wxVERTICAL);
 
   const wxSize launcher_button_size(200, 28);
+  const wxSize launch_button_size(200, 56);
   wxBoxSizer *launchRow = new wxBoxSizer(wxHORIZONTAL);
-  LaunchButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLaunch, wxDefaultPosition, launcher_button_size);
+  LaunchButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLaunch, wxDefaultPosition, launch_button_size);
   LaunchButton->SetBackgroundColour(wxColour(0, 120, 215));
   LaunchButton->SetForegroundColour(*wxWHITE);
   CommandLine = new wxTextCtrl( LauncherPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
