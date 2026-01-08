@@ -18,6 +18,9 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 #include "uMod_Main.h"
 #include "unzip.h"
+#include "zip.h"
+#include <cstring>
+#include <wx/filename.h>
 
 
 uMod_File::uMod_File(void)
@@ -44,6 +47,36 @@ uMod_File::~uMod_File(void)
 {
   if (FileInMemory!=NULL) delete [] FileInMemory;
 }
+
+namespace
+{
+const char kTpfPassword[] = {
+  0x73, 0x2A, 0x63, 0x7D, 0x5F, 0x0A, 0xA6, 0xBD,
+  0x7D, 0x65, 0x7E, 0x67, 0x61, 0x2A, 0x7F, 0x7F,
+  0x74, 0x61, 0x67, 0x5B, 0x60, 0x70, 0x45, 0x74,
+  0x5C, 0x22, 0x74, 0x5D, 0x6E, 0x6A, 0x73, 0x41,
+  0x77, 0x6E, 0x46, 0x47, 0x77, 0x49, 0x0C, 0x4B,
+  0x46, 0x6F, '\0'
+};
+
+void XorTpfBuffer(char *buffer, unsigned int length)
+{
+  unsigned int *buff = (unsigned int*) buffer;
+  unsigned int TPF_XOR = 0x3FA43FA4u;
+  unsigned int size = length / 4u;
+  for (unsigned int i=0; i<size; i++) buff[i] ^= TPF_XOR;
+  for (unsigned int i=size*4u; i<size*4u+length%4u; i++) ((unsigned char*) buffer)[i]^=(unsigned char) TPF_XOR;
+}
+
+wxString ExtractHashFromFilename(const wxString &file_name)
+{
+  wxString name = file_name.AfterLast('_');
+  name = name.BeforeLast('.');
+  unsigned long temp_hash = 0;
+  if (!name.ToULong(&temp_hash, 16)) return wxString();
+  return name;
+}
+} // namespace
 
 
 bool uMod_File::FileSupported(void)
@@ -214,6 +247,167 @@ int uMod_File::GetCommentTpf( wxString &tool_tip)
   UnXOR();
   tool_tip = &FileInMemory[FileLen];
   tool_tip.Prepend( Language->Author);
+  return 0;
+}
+
+int uMod_File::CreateTpfPackage(const wxString &output_path, const wxArrayString &files, const wxString &author, wxString &error)
+{
+  if (files.IsEmpty())
+  {
+    error = Language->Error_NoTexturesSelected;
+    return -1;
+  }
+
+  wxString temp_path = wxFileName::CreateTempFileName("uMod_Tpf");
+  if (temp_path.IsEmpty())
+  {
+    error = Language->Error_TpfCreate;
+    return -1;
+  }
+
+  HZIP zip_handle = CreateZip(temp_path.wc_str(), kTpfPassword);
+  if (zip_handle == NULL)
+  {
+    error = Language->Error_TpfCreate;
+    return -1;
+  }
+
+  wxString def_content;
+  int count = files.GetCount();
+  def_content.Alloc(count * 64);
+  for (int i=0; i<count; i++)
+  {
+    wxFileName file_name(files[i]);
+    wxString base_name = file_name.GetFullName();
+    wxString hash = ExtractHashFromFilename(base_name);
+    if (hash.IsEmpty())
+    {
+      CloseZip(zip_handle);
+      wxRemoveFile(temp_path);
+      error = Language->Error_Hash;
+      error << "\n" << base_name;
+      return -1;
+    }
+    def_content << hash << "|" << base_name << "\n";
+  }
+
+  wxCharBuffer def_buffer = def_content.ToUTF8();
+  ZRESULT zr = ZipAdd(zip_handle, L"texmod.def", (void*)def_buffer.data(), (unsigned int)def_buffer.length());
+  if (zr != ZR_OK)
+  {
+    CloseZip(zip_handle);
+    wxRemoveFile(temp_path);
+    error = Language->Error_TpfCreate;
+    return -1;
+  }
+
+  for (int i=0; i<count; i++)
+  {
+    wxFileName file_name(files[i]);
+    wxString base_name = file_name.GetFullName();
+    if (!file_name.FileExists())
+    {
+      CloseZip(zip_handle);
+      wxRemoveFile(temp_path);
+      error = Language->Error_FileOpen;
+      error << "\n" << files[i];
+      return -1;
+    }
+    zr = ZipAdd(zip_handle, base_name.wc_str(), files[i].wc_str());
+    if (zr != ZR_OK)
+    {
+      CloseZip(zip_handle);
+      wxRemoveFile(temp_path);
+      error = Language->Error_TpfCreate;
+      return -1;
+    }
+  }
+
+  zr = CloseZip(zip_handle);
+  if (zr != ZR_OK)
+  {
+    wxRemoveFile(temp_path);
+    error = Language->Error_TpfCreate;
+    return -1;
+  }
+
+  wxFile temp_file;
+  if (!temp_file.Open(temp_path, wxFile::read))
+  {
+    wxRemoveFile(temp_path);
+    error = Language->Error_FileOpen;
+    error << "\n" << temp_path;
+    return -1;
+  }
+
+  wxFileOffset zip_len = temp_file.Length();
+  if (zip_len <= 0)
+  {
+    temp_file.Close();
+    wxRemoveFile(temp_path);
+    error = Language->Error_FileRead;
+    error << "\n" << temp_path;
+    return -1;
+  }
+
+  wxCharBuffer author_buffer = author.ToUTF8();
+  unsigned int author_len = (unsigned int)author_buffer.length();
+  unsigned int total_len = (unsigned int)zip_len + 1u + author_len + 1u;
+  char *output_buffer = NULL;
+  try {output_buffer = new char[total_len];}
+  catch (...)
+  {
+    temp_file.Close();
+    wxRemoveFile(temp_path);
+    error = Language->Error_Memory;
+    return -1;
+  }
+
+  if (temp_file.Read(output_buffer, zip_len) != zip_len)
+  {
+    delete [] output_buffer;
+    temp_file.Close();
+    wxRemoveFile(temp_path);
+    error = Language->Error_FileRead;
+    error << "\n" << temp_path;
+    return -1;
+  }
+  temp_file.Close();
+  wxRemoveFile(temp_path);
+
+  output_buffer[zip_len] = '\0';
+  if (author_len > 0)
+  {
+    memcpy(output_buffer + zip_len + 1u, author_buffer.data(), author_len);
+  }
+  output_buffer[total_len - 1u] = '\0';
+
+  XorTpfBuffer(output_buffer, total_len);
+
+  wxFile out_file;
+  if (!out_file.Open(output_path, wxFile::write))
+  {
+    out_file.Create(output_path, true);
+  }
+  if (!out_file.IsOpened())
+  {
+    delete [] output_buffer;
+    error = Language->Error_SaveFile;
+    error << "\n" << output_path;
+    return -1;
+  }
+
+  if (out_file.Write(output_buffer, total_len) != total_len)
+  {
+    delete [] output_buffer;
+    out_file.Close();
+    error = Language->Error_SaveFile;
+    error << "\n" << output_path;
+    return -1;
+  }
+
+  delete [] output_buffer;
+  out_file.Close();
   return 0;
 }
 

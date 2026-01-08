@@ -80,6 +80,7 @@ enum
   ID_Button_Path,
   ID_Button_Update,
   ID_Button_Reload,
+  ID_Button_SavePackage,
   //ID_Button_Save,
   //ID_Menu_Pref,
   ID_Menu_Exit,

@@ -36,6 +36,7 @@ public:
   int SetFile(const wxString &file) {FileName=file;Loaded=false; return 0;}
   wxString GetFile(void) {return FileName;}
 
+  static int CreateTpfPackage(const wxString &output_path, const wxArrayString &files, const wxString &author, wxString &error);
 
   wxString LastError;
 

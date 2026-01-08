@@ -39,6 +39,7 @@ BEGIN_EVENT_TABLE(uMod_Frame, wxFrame)
   EVT_BUTTON(ID_Button_Path, uMod_Frame::OnButtonPath)
   EVT_BUTTON(ID_Button_Update, uMod_Frame::OnButtonUpdate)
   EVT_BUTTON(ID_Button_Reload, uMod_Frame::OnButtonReload)
+  EVT_BUTTON(ID_Button_SavePackage, uMod_Frame::OnButtonSavePackage)
 
   EVT_COMMAND  (ID_Add_Game, uMod_EVENT_TYPE, uMod_Frame::OnAddGame)
   EVT_COMMAND  (ID_Delete_Game, uMod_EVENT_TYPE, uMod_Frame::OnDeleteGame)
@@ -276,6 +277,21 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
   if (GamePage->ReloadGame())
   {
     wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+    GamePage->LastError.Empty();
+  }
+}
+
+void uMod_Frame::OnButtonSavePackage(wxCommandEvent& WXUNUSED(event))
+{
+  if (GamePage==NULL) return;
+  if (GamePage->SavePackage())
+  {
+    wxMessageBox(GamePage->LastError, "ERROR", wxOK|wxICON_ERROR);
+    GamePage->LastError.Empty();
+  }
+  else
+  {
+    wxMessageBox(GamePage->LastError, "INFO", wxOK|wxICON_INFORMATION);
     GamePage->LastError.Empty();
   }
 }

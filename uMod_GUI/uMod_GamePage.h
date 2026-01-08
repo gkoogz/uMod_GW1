@@ -47,6 +47,7 @@ public:
   int SetSavePath(const wxString &path);
   wxString GetSavePath(void) {return Game.GetSavePath();}
 
+  int SavePackage(void);
 
   void OnButtonUp(wxCommandEvent& WXUNUSED(event));
   void OnButtonDown(wxCommandEvent& WXUNUSED(event));
@@ -72,6 +73,7 @@ private:
   int ApplyDefaultMods(void);
   void ClearModsList(bool clear_defaults);
   int AddTextureInternal(const wxString &file_name, bool update_game);
+  void RefreshSavedTextures(void);
 
   int GetSettings(void);
   int SetColour( wxTextCtrl** txt, int *colour);
@@ -111,6 +113,13 @@ private:
   wxButton *DirectoryButton;
   wxButton *UpdateButton;
   wxButton *ReloadButton;
+  wxListCtrl *SavedTexturesList;
+  wxStaticText *SavedTexturesLabel;
+  wxStaticText *PackageNameLabel;
+  wxStaticText *PackageAuthorLabel;
+  wxTextCtrl *PackageName;
+  wxTextCtrl *PackageAuthor;
+  wxButton *SavePackageButton;
 
   wxCheckBox *LoadDefaultMods;
   wxCheckBox *SaveAllTextures;
@@ -129,6 +138,7 @@ private:
 
   wxArrayString Files;
   wxArrayString DefaultMods;
+  wxArrayString SavedTexturePaths;
   uMod_GameInfo Game;
   uMod_GameInfo GameOld;
 

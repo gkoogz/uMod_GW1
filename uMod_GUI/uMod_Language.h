@@ -64,6 +64,14 @@ public:
   wxString CheckBoxSaveSingleTexture;
   wxString CheckBoxSaveAllTextures;
   wxString TextCtrlSavePath;
+  wxString SavedTexturesLabel;
+  wxString SavedTexturesColumn;
+  wxString SavedTexturesHintNoPath;
+  wxString SavedTexturesHintEmpty;
+  wxString PackageNameLabel;
+  wxString PackageAuthorLabel;
+  wxString ButtonSavePackage;
+  wxString PackageSaved;
   wxString CommandLineHint;
   wxString TabLauncher;
   wxString TabModMaker;
@@ -95,6 +103,9 @@ public:
   wxString Error_NoPipe;
   wxString Error_WritePipe;
   wxString Error_FlushPipe;
+  wxString Error_NoTexturesSelected;
+  wxString Error_PackageNameRequired;
+  wxString Error_TpfCreate;
   wxString Error_Hash;
   wxString Error_FileOpen;
   wxString Error_FileRead;
