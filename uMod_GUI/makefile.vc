@@ -34,6 +34,7 @@ MINIMAL_CXXFLAGS = /M$(__RUNTIME_LIBS_10)$(__DEBUGRUNTIME_4) /DWIN32 \
 	$(CPPFLAGS) $(CXXFLAGS)
 MINIMAL_OBJECTS = \
 	$(OBJS)\unzip.obj \
+	$(OBJS)\zip.obj \
 	$(OBJS)\uMod_DirectInjection.obj \
 	$(OBJS)\uMod_GUI.obj \
 	$(OBJS)\uMod_GameInfo.obj \
@@ -367,6 +368,9 @@ $(OBJS)\uMod_GUI.res: uMod.rc
 	
 $(OBJS)\unzip.obj: .\unzip.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\unzip.cpp
+
+$(OBJS)\zip.obj: .\zip.cpp
+  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\zip.cpp
 
 $(OBJS)\uMod_DirectInjection.obj: .\uMod_DirectInjection.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_DirectInjection.cpp

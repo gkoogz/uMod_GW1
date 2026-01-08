@@ -17,7 +17,9 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 */
 
 #include "uMod_Main.h"
+#include <wx/artprov.h>
 #include <wx/filename.h>
+#include <wx/listctrl.h>
 #include <wx/tooltip.h>
 
 static const wchar_t* DEFAULT_MODS_FILE = L"uMod_DefaultMods.txt";
@@ -36,6 +38,13 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   CheckButtonDown = NULL;
   CheckButtonDelete = NULL;
   CheckBoxes = NULL;
+  SavedTexturesList = NULL;
+  SavedTexturesLabel = NULL;
+  PackageNameLabel = NULL;
+  PackageAuthorLabel = NULL;
+  PackageName = NULL;
+  PackageAuthor = NULL;
+  SavePackageButton = NULL;
 
   MainSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -153,6 +162,39 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   updateRow->Add( (wxWindow*) ReloadButton, 0, wxEXPAND, 0);
   ModMakerSizer->Add( updateRow, 0, wxEXPAND, 0);
 
+  ModMakerSizer->AddSpacer(10);
+
+  SavedTexturesLabel = new wxStaticText(ModMakerPanel, wxID_ANY, Language->SavedTexturesLabel);
+  ModMakerSizer->Add( (wxWindow*) SavedTexturesLabel, 0, wxEXPAND, 0);
+
+  SavedTexturesList = new wxListCtrl(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxSize(-1, 240),
+                                     wxLC_REPORT | wxLC_SINGLE_SEL | wxLC_HRULES | wxLC_VRULES);
+  SavedTexturesList->InsertColumn(0, Language->SavedTexturesColumn, wxLIST_FORMAT_LEFT, 400);
+#if wxCHECK_VERSION(3,1,0)
+  SavedTexturesList->EnableCheckBoxes(true);
+#endif
+  wxImageList *saved_images = new wxImageList(24, 24);
+  saved_images->Add(wxArtProvider::GetBitmap(wxART_NORMAL_FILE, wxART_OTHER, wxSize(24, 24)));
+  SavedTexturesList->AssignImageList(saved_images, wxIMAGE_LIST_SMALL);
+  ModMakerSizer->Add( (wxWindow*) SavedTexturesList, 1, wxEXPAND, 0);
+
+  wxBoxSizer *packageNameRow = new wxBoxSizer(wxHORIZONTAL);
+  PackageNameLabel = new wxStaticText(ModMakerPanel, wxID_ANY, Language->PackageNameLabel);
+  packageNameRow->Add( (wxWindow*) PackageNameLabel, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 10);
+  PackageName = new wxTextCtrl(ModMakerPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
+  packageNameRow->Add( (wxWindow*) PackageName, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( packageNameRow, 0, wxEXPAND, 0);
+
+  wxBoxSizer *packageAuthorRow = new wxBoxSizer(wxHORIZONTAL);
+  PackageAuthorLabel = new wxStaticText(ModMakerPanel, wxID_ANY, Language->PackageAuthorLabel);
+  packageAuthorRow->Add( (wxWindow*) PackageAuthorLabel, 0, wxRIGHT | wxALIGN_CENTER_VERTICAL, 10);
+  PackageAuthor = new wxTextCtrl(ModMakerPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
+  packageAuthorRow->Add( (wxWindow*) PackageAuthor, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( packageAuthorRow, 0, wxEXPAND, 0);
+
+  SavePackageButton = new wxButton(ModMakerPanel, ID_Button_SavePackage, Language->ButtonSavePackage, wxDefaultPosition, wxSize(180, 28));
+  ModMakerSizer->Add( (wxWindow*) SavePackageButton, 0, wxTOP, 6);
+
   NumberOfEntry = 0;
   MaxNumberOfEntry = 1024;
   if (GetMemory( CheckBoxes, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return;}
@@ -179,6 +221,8 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LoadDefaultModsList();
   if (LoadDefaultMods->GetValue()) ApplyDefaultMods();
   else ClearModsList(false);
+
+  RefreshSavedTextures();
 }
 
 uMod_GamePage::~uMod_GamePage(void)
@@ -213,6 +257,7 @@ void uMod_GamePage::EnableGameControls( bool enable)
   if (DirectoryButton!=NULL) DirectoryButton->Enable(enable);
   if (UpdateButton!=NULL) UpdateButton->Enable(enable);
   if (ReloadButton!=NULL) ReloadButton->Enable(enable);
+  if (SavePackageButton!=NULL) SavePackageButton->Enable(enable);
 }
 
 void uMod_GamePage::SetGameInfo( const wxString &exe, const wxString &save)
@@ -481,7 +526,55 @@ int uMod_GamePage::SetSavePath( const wxString &path)
   save_path << path;
   SavePath->SetValue(save_path);
   Game.SetSavePath( path);
+  RefreshSavedTextures();
   return 0;
+}
+
+void uMod_GamePage::RefreshSavedTextures(void)
+{
+  if (SavedTexturesList==NULL) return;
+  SavedTexturesList->DeleteAllItems();
+  SavedTexturePaths.Clear();
+
+  wxString save_path = Game.GetSavePath();
+  if (save_path.IsEmpty() || !wxDirExists(save_path))
+  {
+    long index = SavedTexturesList->InsertItem(0, Language->SavedTexturesHintNoPath, 0);
+    SavedTexturesList->SetItemTextColour(index, wxColour(120, 120, 120));
+    return;
+  }
+
+  wxDir dir(save_path);
+  if (!dir.IsOpened())
+  {
+    long index = SavedTexturesList->InsertItem(0, Language->SavedTexturesHintNoPath, 0);
+    SavedTexturesList->SetItemTextColour(index, wxColour(120, 120, 120));
+    return;
+  }
+
+  wxString filename;
+  bool found = dir.GetFirst(&filename, "*.dds", wxDIR_FILES);
+  if (!found)
+  {
+    long index = SavedTexturesList->InsertItem(0, Language->SavedTexturesHintEmpty, 0);
+    SavedTexturesList->SetItemTextColour(index, wxColour(120, 120, 120));
+    return;
+  }
+
+  long item = 0;
+  while (found)
+  {
+    wxFileName file_name(save_path, filename);
+    SavedTexturePaths.Add(file_name.GetFullPath());
+    long index = SavedTexturesList->InsertItem(item, filename, 0);
+    SavedTexturesList->SetItemData(index, SavedTexturePaths.GetCount() - 1);
+#if wxCHECK_VERSION(3,1,0)
+    SavedTexturesList->CheckItem(index, true);
+#endif
+    item++;
+    found = dir.GetNext(&filename);
+  }
+  SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE);
 }
 
 
@@ -608,6 +701,7 @@ int uMod_GamePage::UpdateGame(void)
   }
 
   GameOld = Game;
+  RefreshSavedTextures();
   return 0;
 }
 
@@ -630,6 +724,67 @@ int uMod_GamePage::ReloadGame(void)
   }
 
   GameOld = Game;
+  RefreshSavedTextures();
+  return 0;
+}
+
+int uMod_GamePage::SavePackage(void)
+{
+  LastError.Empty();
+  wxString save_path = Game.GetSavePath();
+  if (save_path.IsEmpty())
+  {
+    LastError = Language->Error_NoSavePath;
+    return -1;
+  }
+
+  wxString package_name = PackageName->GetValue();
+  package_name.Trim(true);
+  package_name.Trim(false);
+  if (package_name.IsEmpty())
+  {
+    LastError = Language->Error_PackageNameRequired;
+    return -1;
+  }
+
+  wxArrayString selected_files;
+  long item = -1;
+  while (true)
+  {
+    item = SavedTexturesList->GetNextItem(item, wxLIST_NEXT_ALL, wxLIST_STATE_DONTCARE);
+    if (item == -1) break;
+#if wxCHECK_VERSION(3,1,0)
+    if (!SavedTexturesList->IsItemChecked(item)) continue;
+#endif
+    long data = SavedTexturesList->GetItemData(item);
+    if (data >= 0 && data < (long)SavedTexturePaths.GetCount())
+    {
+      selected_files.Add(SavedTexturePaths[(size_t)data]);
+    }
+  }
+
+  if (selected_files.IsEmpty())
+  {
+    LastError = Language->Error_NoTexturesSelected;
+    return -1;
+  }
+
+  wxFileName output_name(save_path, package_name);
+  if (output_name.GetExt().IsEmpty()) output_name.SetExt("tpf");
+  wxString output_path = output_name.GetFullPath();
+
+  wxString error;
+  wxString author = PackageAuthor->GetValue();
+  author.Trim(true);
+  author.Trim(false);
+  if (uMod_File::CreateTpfPackage(output_path, selected_files, author, error))
+  {
+    LastError = error;
+    return -1;
+  }
+
+  LastError = Language->PackageSaved;
+  LastError << "\n" << output_path;
   return 0;
 }
 
@@ -760,6 +915,17 @@ int uMod_GamePage::UpdateLanguage(void)
   DirectoryButton->SetLabel( Language->ButtonDirectory);
   UpdateButton->SetLabel( Language->ButtonUpdate);
   ReloadButton->SetLabel( Language->ButtonReload);
+  if (SavedTexturesLabel!=NULL) SavedTexturesLabel->SetLabel( Language->SavedTexturesLabel);
+  if (SavedTexturesList!=NULL)
+  {
+    wxListItem column;
+    column.SetText(Language->SavedTexturesColumn);
+    SavedTexturesList->SetColumn(0, column);
+    SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE);
+  }
+  if (PackageNameLabel!=NULL) PackageNameLabel->SetLabel(Language->PackageNameLabel);
+  if (PackageAuthorLabel!=NULL) PackageAuthorLabel->SetLabel(Language->PackageAuthorLabel);
+  if (SavePackageButton!=NULL) SavePackageButton->SetLabel( Language->ButtonSavePackage);
   if (ModsSizer!=NULL && ModsSizer->GetStaticBox()!=NULL)
   {
     ModsSizer->GetStaticBox()->SetLabel( Language->LoadedMods);
@@ -776,5 +942,6 @@ int uMod_GamePage::UpdateLanguage(void)
   wxString temp = Language->TextCtrlSavePath;
   temp << Game.GetSavePath();
   SavePath->SetValue( temp);
+  RefreshSavedTextures();
   return 0;
 }

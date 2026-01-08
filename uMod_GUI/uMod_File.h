@@ -36,6 +36,7 @@ public:
   int SetFile(const wxString &file) {FileName=file;Loaded=false; return 0;}
   wxString GetFile(void) {return FileName;}
 
+  static int CreateTpfPackage(const wxString &output_path, const wxArrayString &files, const wxString &author, wxString &error);
 
   wxString LastError;
 
@@ -48,7 +49,7 @@ private:
 
   int AddFile( AddTextureClass &tex, bool add);
   int AddZip( AddTextureClass &tex, bool add, bool tpf);
-  int AddContent( const char* pw, AddTextureClass &tex, bool add);
+  int AddContent( AddTextureClass &tex, bool add);
 
   wxString FileName;
   bool Loaded;

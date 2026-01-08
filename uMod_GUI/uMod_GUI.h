@@ -46,6 +46,7 @@ public:
   void OnButtonPath(wxCommandEvent& WXUNUSED(event));
   void OnButtonUpdate(wxCommandEvent& WXUNUSED(event));
   void OnButtonReload(wxCommandEvent& WXUNUSED(event));
+  void OnButtonSavePackage(wxCommandEvent& WXUNUSED(event));
 
 private:
 

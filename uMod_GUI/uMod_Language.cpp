@@ -209,6 +209,14 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, CheckBoxSaveSingleTexture)
     CheckEntry( command, msg, CheckBoxSaveAllTextures)
     CheckEntry( command, msg, TextCtrlSavePath)
+    CheckEntry( command, msg, SavedTexturesLabel)
+    CheckEntry( command, msg, SavedTexturesColumn)
+    CheckEntry( command, msg, SavedTexturesHintNoPath)
+    CheckEntry( command, msg, SavedTexturesHintEmpty)
+    CheckEntry( command, msg, PackageNameLabel)
+    CheckEntry( command, msg, PackageAuthorLabel)
+    CheckEntry( command, msg, ButtonSavePackage)
+    CheckEntry( command, msg, PackageSaved)
     CheckEntry( command, msg, CommandLineHint)
     CheckEntry( command, msg, TabLauncher)
     CheckEntry( command, msg, TabModMaker)
@@ -234,6 +242,9 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, Error_NoPipe)
     CheckEntry( command, msg, Error_WritePipe)
     CheckEntry( command, msg, Error_FlushPipe)
+    CheckEntry( command, msg, Error_NoTexturesSelected)
+    CheckEntry( command, msg, Error_PackageNameRequired)
+    CheckEntry( command, msg, Error_TpfCreate)
     CheckEntry( command, msg, Error_Hash)
     CheckEntry( command, msg, Error_FileOpen)
     CheckEntry( command, msg, Error_FileRead)
@@ -291,6 +302,14 @@ int uMod_Language::LoadDefault(void)
   CheckBoxSaveSingleTexture = "Save single texture";
   CheckBoxSaveAllTextures = "Save all textures";
   TextCtrlSavePath = "Save path:";
+  SavedTexturesLabel = "Saved textures";
+  SavedTexturesColumn = "Texture";
+  SavedTexturesHintNoPath = "Set a save directory to list textures.";
+  SavedTexturesHintEmpty = "No .dds textures found in the save directory.";
+  PackageNameLabel = "Name";
+  PackageAuthorLabel = "Author";
+  ButtonSavePackage = "Save package";
+  PackageSaved = "Package saved to:";
   CommandLineHint = "Command line arguments...";
   TabLauncher = "Launcher";
   TabModMaker = "Mod Maker";
@@ -322,6 +341,9 @@ int uMod_Language::LoadDefault(void)
   Error_NoPipe = "Pipe is not opened.";
   Error_WritePipe = "Could not write in pipe.";
   Error_FlushPipe = "Could not flush pipe buffer.";
+  Error_NoTexturesSelected = "No textures selected.";
+  Error_PackageNameRequired = "Package name is required.";
+  Error_TpfCreate = "Could not create TPF package.";
   Error_Hash = "Could not find hash, maybe file is not named as *_HASH.dds";
   Error_FileOpen = "Could not open file:";
   Error_FileRead = "Could not read file:";

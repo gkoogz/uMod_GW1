@@ -1,3 +1,8 @@
+#if defined(UNICODE) && !defined(_UNICODE)
+#define _UNICODE
+#elif defined(_UNICODE) && !defined(UNICODE)
+#define UNICODE
+#endif
 #include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
@@ -2827,4 +2832,3 @@ bool IsZipHandleZ(HZIP hz)
   TZipHandleData *han = (TZipHandleData*)hz;
   return (han->flag==2);
 }
-
