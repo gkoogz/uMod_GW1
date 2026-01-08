@@ -454,7 +454,7 @@ int uMod_File::AddZip( AddTextureClass &tex, bool add, bool tpf)
 
     wxString initial_error;
     int ret = AddContent( NULL, tex, add);
-    if (ret == 0) return 0;
+    if (ret == 0 && tex.Num > 0) return 0;
     initial_error = LastError;
     LastError.Empty();
     int legacy_ret = AddContent( reinterpret_cast<const char*>(kLegacyTpfPassword), tex, add);
