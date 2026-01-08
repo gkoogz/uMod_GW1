@@ -370,7 +370,7 @@ $(OBJS)\unzip.obj: .\unzip.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\unzip.cpp
 
 $(OBJS)\zip.obj: .\zip.cpp
-  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) /D_CRT_SECURE_NO_WARNINGS /wd4458 /wd4996 .\zip.cpp
+  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) /DUNICODE /D_CRT_SECURE_NO_WARNINGS /wd4458 /wd4996 .\zip.cpp
 
 $(OBJS)\uMod_DirectInjection.obj: .\uMod_DirectInjection.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_DirectInjection.cpp
