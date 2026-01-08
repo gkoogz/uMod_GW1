@@ -49,7 +49,7 @@ private:
 
   int AddFile( AddTextureClass &tex, bool add);
   int AddZip( AddTextureClass &tex, bool add, bool tpf);
-  int AddContent( const char* pw, AddTextureClass &tex, bool add);
+  int AddContent( AddTextureClass &tex, bool add);
 
   wxString FileName;
   bool Loaded;

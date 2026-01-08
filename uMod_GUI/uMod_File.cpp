@@ -419,10 +419,10 @@ int uMod_File::CreateTpfPackage(const wxString &output_path, const wxArrayString
 
 
 
-int uMod_File::AddFile( AddTextureClass &tex, bool add)
-{
-  tex.SetSize(1);
-  unsigned long temp_hash;
+    return AddContent( tex, add);
+    return AddContent( tex, add);
+int uMod_File::AddContent( AddTextureClass &tex, bool add)
+  HZIP ZIP_Handle = OpenZip( FileInMemory, FileLen, NULL);
 
   wxString name = FileName.AfterLast( '_');
   name = name.BeforeLast( '.');
