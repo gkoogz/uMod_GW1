@@ -18,6 +18,7 @@ if errorlevel 1 (
 popd
 
 echo Cleaning uMod GUI bin...
+taskkill /F /IM uMod.exe >NUL 2>&1
 if exist "%ROOT_DIR%uMod_GUI\bin" rmdir /s /q "%ROOT_DIR%uMod_GUI\bin"
 if not exist "%ROOT_DIR%uMod_GUI\bin" mkdir "%ROOT_DIR%uMod_GUI\bin"
 
