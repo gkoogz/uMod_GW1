@@ -228,7 +228,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
   Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSavePackage, this, SavePackageButton->GetId());
-  Bind( wxEVT_LIST_ITEM_LEFT_CLICK, &uMod_GamePage::OnSavedTextureClick, this, SavedTexturesList->GetId());
+  Bind( wxEVT_LIST_ITEM_SELECTED, &uMod_GamePage::OnSavedTextureClick, this, SavedTexturesList->GetId());
 
   UpdateLaunchState();
   LoadDefaultModsList();
@@ -546,7 +546,8 @@ void uMod_GamePage::RefreshSavedTextures(void)
     SavedTexturesList->SetItemData(item, SavedTextureFiles.GetCount() - 1);
     SavedTextureChecked.Add(1);
     int state = SavedTexturesCheckedIndex + 1;
-    SavedTexturesList->SetItemState(item, state << 12, wxLIST_STATE_STATEIMAGEMASK);
+    const long state_mask = 0xF000;
+    SavedTexturesList->SetItemState(item, state << 12, state_mask);
     index++;
     cont = dir.GetNext(&filename);
   }
@@ -565,7 +566,8 @@ void uMod_GamePage::ToggleSavedTextureSelection(long item)
   if (item < 0 || item >= (long)SavedTextureChecked.GetCount()) return;
   SavedTextureChecked[item] = SavedTextureChecked[item] ? 0 : 1;
   int state = SavedTextureChecked[item] ? SavedTexturesCheckedIndex + 1 : SavedTexturesUncheckedIndex + 1;
-  SavedTexturesList->SetItemState(item, state << 12, wxLIST_STATE_STATEIMAGEMASK);
+  const long state_mask = 0xF000;
+  SavedTexturesList->SetItemState(item, state << 12, state_mask);
 }
 
 bool uMod_GamePage::IsSavedTextureSelected(long item) const
