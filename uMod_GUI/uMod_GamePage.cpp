@@ -163,6 +163,16 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   SavedTexturesSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, Language->SavedTexturesHeader);
   SavedTexturesList = new wxListCtrl(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
   SavedTexturesList->InsertColumn(0, Language->SavedTexturesHeader);
+  SavedTexturesImages = new wxImageList(1, 1, true);
+  wxBitmap placeholder(1, 1);
+  {
+    wxMemoryDC dc(placeholder);
+    dc.SetBackground(*wxWHITE_BRUSH);
+    dc.Clear();
+    dc.SelectObject(wxNullBitmap);
+  }
+  SavedTexturesPlaceholderIndex = SavedTexturesImages->Add(placeholder);
+  SavedTexturesList->SetImageList(SavedTexturesImages, wxIMAGE_LIST_SMALL);
   SavedTexturesStateImages = new wxImageList(16, 16, true);
   wxBitmap unchecked(16, 16);
   {
@@ -246,6 +256,7 @@ uMod_GamePage::~uMod_GamePage(void)
   delete [] CheckButtonDown;
   delete [] CheckButtonDelete;
   delete [] CheckBoxes;
+  delete SavedTexturesImages;
   delete SavedTexturesStateImages;
 }
 
@@ -552,7 +563,7 @@ void uMod_GamePage::ClearModsList(bool clear_defaults)
 
 void uMod_GamePage::RefreshSavedTextures(void)
 {
-  if (SavedTexturesList==NULL) return;
+  if (SavedTexturesList==NULL || SavedTexturesImages==NULL) return;
   SavedTexturesList->DeleteAllItems();
   SavedTextureFiles.Clear();
   SavedTextureChecked.Clear();
@@ -560,7 +571,7 @@ void uMod_GamePage::RefreshSavedTextures(void)
   wxString path = Game.GetSavePath();
   if (path.IsEmpty())
   {
-    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesHint);
+    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesHint, SavedTexturesPlaceholderIndex);
     SavedTexturesList->SetItemData(item, -1);
     SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
     UpdateSavedTexturesListSize();
@@ -570,7 +581,7 @@ void uMod_GamePage::RefreshSavedTextures(void)
   wxDir dir(path);
   if (!dir.IsOpened())
   {
-    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesEmpty);
+    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesEmpty, SavedTexturesPlaceholderIndex);
     SavedTexturesList->SetItemData(item, -1);
     SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
     UpdateSavedTexturesListSize();
@@ -584,7 +595,7 @@ void uMod_GamePage::RefreshSavedTextures(void)
   {
     wxFileName full_path(path, filename);
     wxString file_path = full_path.GetFullPath();
-    long item = SavedTexturesList->InsertItem(index, filename);
+    long item = SavedTexturesList->InsertItem(index, filename, SavedTexturesPlaceholderIndex);
     SavedTextureFiles.Add(file_path);
     SavedTexturesList->SetItemData(item, SavedTextureFiles.GetCount() - 1);
     SavedTextureChecked.Add(1);
@@ -597,7 +608,7 @@ void uMod_GamePage::RefreshSavedTextures(void)
 
   if (SavedTextureFiles.IsEmpty())
   {
-    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesEmpty);
+    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesEmpty, SavedTexturesPlaceholderIndex);
     SavedTexturesList->SetItemData(item, -1);
   }
 

@@ -128,12 +128,14 @@ private:
   wxCheckBox *SaveSingleTexture;
   wxTextCtrl *SavePath;
   wxListCtrl *SavedTexturesList;
+  wxImageList *SavedTexturesImages;
   wxImageList *SavedTexturesStateImages;
   wxStaticText *PackageNameLabel;
   wxStaticText *PackageAuthorLabel;
   wxTextCtrl *PackageName;
   wxTextCtrl *PackageAuthor;
   wxButton *SavePackageButton;
+  int SavedTexturesPlaceholderIndex;
   int SavedTexturesUncheckedIndex;
   int SavedTexturesCheckedIndex;
 
