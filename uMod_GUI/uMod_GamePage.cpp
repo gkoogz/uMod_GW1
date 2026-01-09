@@ -163,8 +163,8 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   SavedTexturesSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, Language->SavedTexturesHeader);
   SavedTexturesList = new wxListCtrl(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
   SavedTexturesList->InsertColumn(0, Language->SavedTexturesHeader);
-  SavedTexturesImages = new wxImageList(16, 16, true);
-  wxBitmap placeholder(16, 16);
+  SavedTexturesImages = new wxImageList(32, 32, true);
+  wxBitmap placeholder(32, 32);
   {
     wxMemoryDC dc(placeholder);
     dc.SetBackground(*wxWHITE_BRUSH);
@@ -600,8 +600,7 @@ void uMod_GamePage::RefreshSavedTextures(void)
     SavedTexturesList->SetItemData(item, SavedTextureFiles.GetCount() - 1);
     SavedTextureChecked.Add(1);
     int state = SavedTexturesCheckedIndex + 1;
-    const long state_mask = 0xF000;
-    SavedTexturesList->SetItemState(item, state << 12, state_mask);
+    SavedTexturesList->SetItemState(item, state << 12, wxLIST_STATE_STATEIMAGEMASK);
     index++;
     cont = dir.GetNext(&filename);
   }
@@ -642,8 +641,7 @@ void uMod_GamePage::ToggleSavedTextureSelection(long item)
   if (item < 0 || item >= (long)SavedTextureChecked.GetCount()) return;
   SavedTextureChecked[item] = SavedTextureChecked[item] ? 0 : 1;
   int state = SavedTextureChecked[item] ? SavedTexturesCheckedIndex + 1 : SavedTexturesUncheckedIndex + 1;
-  const long state_mask = 0xF000;
-  SavedTexturesList->SetItemState(item, state << 12, state_mask);
+  SavedTexturesList->SetItemState(item, state << 12, wxLIST_STATE_STATEIMAGEMASK);
 }
 
 bool uMod_GamePage::IsSavedTextureSelected(long item) const
