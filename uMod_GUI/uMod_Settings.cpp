@@ -59,7 +59,7 @@ int uMod_Settings::Load(void)
   wxFile file;
 
   wxString settings_path = GetSettingsPath();
-  if (!file.Access(settings_path, wxFile::read)) {return 0;}
+  if (!file.Access(settings_path, wxFile::read)) {Save(); return 0;}
   file.Open(settings_path, wxFile::read);
   if (!file.IsOpened()) return -1;
 
