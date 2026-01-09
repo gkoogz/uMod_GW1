@@ -333,11 +333,12 @@ int uMod_Frame::GetInjectedGames( wxArrayString &games, wxArrayString &cmd)
 {
   wxFile file;
 
-  if (!file.Access( DI_FILE, wxFile::read)) {LastError << Language->Error_FileOpen << "\n" << DI_FILE; return -1;}
+  if (!file.Access( DI_FILE, wxFile::read)) {return 0;}
   file.Open( DI_FILE, wxFile::read);
-  if (!file.IsOpened()) {LastError << Language->Error_FileOpen << "\n" << DI_FILE ; return -1;}
+  if (!file.IsOpened()) {return -1;}
 
   unsigned len = file.Length();
+  if (len == 0 || (len % 2) != 0) {file.Close(); wxRemoveFile(DI_FILE); return 0;}
 
   unsigned char* buffer;
   try {buffer = new unsigned char [len+2];}
@@ -346,7 +347,7 @@ int uMod_Frame::GetInjectedGames( wxArrayString &games, wxArrayString &cmd)
   unsigned int result = file.Read( buffer, len);
   file.Close();
 
-  if (result != len) {delete [] buffer; LastError << Language->Error_FileRead<<"\n" << DI_FILE; return -1;}
+  if (result != len) {delete [] buffer; wxRemoveFile(DI_FILE); return -1;}
 
   wchar_t *buff = (wchar_t*)buffer;
   len/=2;

@@ -348,13 +348,20 @@ int uMod_GamePage::LoadDefaultModsList(void)
   if (!file.IsOpened()) return 0;
 
   unsigned len = file.Length();
+  if (len == 0 || (len % 2) != 0)
+  {
+    file.Close();
+    wxRemoveFile(DEFAULT_MODS_FILE);
+    if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
+    return 0;
+  }
   unsigned char* buffer;
   try {buffer = new unsigned char [len+2];}
   catch (...) {return -1;}
 
   unsigned int result = file.Read( buffer, len);
   file.Close();
-  if (result != len) {delete [] buffer; return -1;}
+  if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_FILE); return -1;}
 
   wchar_t *buff = (wchar_t*)buffer;
   len/=2;
@@ -408,19 +415,28 @@ int uMod_GamePage::LoadDefaultModsState(void)
     if (file.IsOpened())
     {
       unsigned len = file.Length();
+      if (len == 0 || (len % 2) != 0)
+      {
+        file.Close();
+        wxRemoveFile(DEFAULT_MODS_STATE_FILE);
+        enabled = (DefaultMods.GetCount()>0);
+      }
+      else
+      {
       unsigned char* buffer;
       try {buffer = new unsigned char [len+2];}
       catch (...) {return -1;}
 
       unsigned int result = file.Read( buffer, len);
       file.Close();
-      if (result != len) {delete [] buffer; return -1;}
+      if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_STATE_FILE); return -1;}
 
       wchar_t *buff = (wchar_t*)buffer;
       len/=2;
       buff[len]=0;
       enabled = (buff[0] == L'1');
       delete [] buffer;
+      }
     }
   }
   else
