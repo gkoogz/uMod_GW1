@@ -76,6 +76,7 @@ private:
   void ClearModsList(bool clear_defaults);
   int AddTextureInternal(const wxString &file_name, bool update_game);
   void RefreshSavedTextures(void);
+  void UpdateSavedTexturesListSize(void);
   void ToggleSavedTextureSelection(long item);
   bool IsSavedTextureSelected(long item) const;
   bool ExtractTextureHash(const wxString &file_name, unsigned long &hash) const;
@@ -89,10 +90,9 @@ private:
 
   wxString ExeName;
 
-  wxBoxSizer *SizerKeys[2];
-  wxTextCtrl *TextKeyBack;
-  wxTextCtrl *TextKeySave;
-  wxTextCtrl *TextKeyNext;
+  wxButton *KeyBackButton;
+  wxButton *KeySaveButton;
+  wxButton *KeyNextButton;
   wxChoice *ChoiceKeyBack;
   wxChoice *ChoiceKeySave;
   wxChoice *ChoiceKeyNext;
@@ -128,14 +128,12 @@ private:
   wxCheckBox *SaveSingleTexture;
   wxTextCtrl *SavePath;
   wxListCtrl *SavedTexturesList;
-  wxImageList *SavedTexturesImages;
   wxImageList *SavedTexturesStateImages;
   wxStaticText *PackageNameLabel;
   wxStaticText *PackageAuthorLabel;
   wxTextCtrl *PackageName;
   wxTextCtrl *PackageAuthor;
   wxButton *SavePackageButton;
-  int SavedTexturesPlaceholderIndex;
   int SavedTexturesUncheckedIndex;
   int SavedTexturesCheckedIndex;
 
