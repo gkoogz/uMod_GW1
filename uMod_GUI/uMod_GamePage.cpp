@@ -163,8 +163,8 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   SavedTexturesSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, Language->SavedTexturesHeader);
   SavedTexturesList = new wxListCtrl(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
   SavedTexturesList->InsertColumn(0, Language->SavedTexturesHeader);
-  SavedTexturesImages = new wxImageList(1, 1, true);
-  wxBitmap placeholder(1, 1);
+  SavedTexturesImages = new wxImageList(16, 16, true);
+  wxBitmap placeholder(16, 16);
   {
     wxMemoryDC dc(placeholder);
     dc.SetBackground(*wxWHITE_BRUSH);
