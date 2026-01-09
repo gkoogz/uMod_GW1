@@ -615,11 +615,7 @@ void uMod_GamePage::UpdateSavedTexturesListSize(void)
   wxRect item_rect;
   if (SavedTexturesList->GetItemRect(0, item_rect)) row_height = item_rect.GetHeight();
 
-  int header_height = 0;
-  wxWindow *header = SavedTexturesList->GetHeader();
-  if (header != NULL) header_height = header->GetSize().GetHeight();
-
-  int total_height = header_height + (row_height * item_count) + 6;
+  int total_height = (row_height * item_count) + 6;
   SavedTexturesList->SetMinSize(wxSize(-1, total_height));
   SavedTexturesList->SetMaxSize(wxSize(-1, total_height));
   if (ModMakerPanel!=NULL && ModMakerSizer!=NULL)
