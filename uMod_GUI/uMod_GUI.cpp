@@ -61,7 +61,7 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
   if (info == NULL) return 0;
 
-  DWORD wait = WaitForSingleObject(info->process, 15000);
+  DWORD wait = WaitForSingleObject(info->process, 5000);
   CloseHandle(info->process);
   info->process = INVALID_HANDLE_VALUE;
 
