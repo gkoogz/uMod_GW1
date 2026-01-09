@@ -57,14 +57,37 @@ static wxString GetSettingsPath(void)
 int uMod_Settings::Load(void)
 {
   wxFile file;
+  auto reset_defaults = [this]() {
+    XSize = 600;
+    YSize = 400;
+    XPos = -1;
+    YPos = -1;
+    Language = "English";
+  };
 
   wxString settings_path = GetSettingsPath();
-  if (!file.Access(settings_path, wxFile::read)) {Save(); return 0;}
+  if (!file.Access(settings_path, wxFile::read))
+  {
+    reset_defaults();
+    Save();
+    return 0;
+  }
   file.Open(settings_path, wxFile::read);
-  if (!file.IsOpened()) return -1;
+  if (!file.IsOpened())
+  {
+    reset_defaults();
+    Save();
+    return 0;
+  }
 
   unsigned len = file.Length();
-  if (len == 0 || (len % 2) != 0) {return -1;}
+  if (len == 0 || (len % 2) != 0)
+  {
+    file.Close();
+    reset_defaults();
+    Save();
+    return 0;
+  }
 
   unsigned char* buffer;
   try {buffer = new unsigned char [len+2];}
@@ -73,7 +96,13 @@ int uMod_Settings::Load(void)
   unsigned int result = file.Read( buffer, len);
   file.Close();
 
-  if (result != len) {delete [] buffer; return -1;}
+  if (result != len)
+  {
+    delete [] buffer;
+    reset_defaults();
+    Save();
+    return 0;
+  }
 
   wchar_t *buff = (wchar_t*)buffer;
   len/=2;
@@ -120,6 +149,15 @@ int uMod_Settings::Load(void)
     }
   }
 
+  if (Language.IsEmpty()) Language = "English";
+  if (XSize < 200) XSize = 200;
+  if (YSize < 200) YSize = 200;
+  if (XSize > 4000) XSize = 4000;
+  if (YSize > 4000) YSize = 4000;
+  if (XPos < -1) XPos = -1;
+  if (YPos < -1) YPos = -1;
+  if (XPos > 10000) XPos = 10000;
+  if (YPos > 10000) YPos = 10000;
   return 0;
 }
 
