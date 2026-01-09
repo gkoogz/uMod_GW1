@@ -153,6 +153,7 @@ private:
   wxArrayString DefaultMods;
   wxArrayString SavedTextureFiles;
   wxArrayInt SavedTextureChecked;
+  bool SuppressDefaultModsSave;
   uMod_GameInfo Game;
   uMod_GameInfo GameOld;
 

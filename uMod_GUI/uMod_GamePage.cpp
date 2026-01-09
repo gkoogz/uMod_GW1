@@ -41,6 +41,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   CheckButtonDown = NULL;
   CheckButtonDelete = NULL;
   CheckBoxes = NULL;
+  SuppressDefaultModsSave = false;
 
   MainSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -504,6 +505,7 @@ int uMod_GamePage::ApplyDefaultMods(void)
 {
   if (DefaultMods.GetCount()==0) return 0;
   int added = 0;
+  SuppressDefaultModsSave = true;
   for (unsigned int i=0; i<DefaultMods.GetCount(); i++)
   {
     const wxString &file_name = DefaultMods[i];
@@ -515,6 +517,7 @@ int uMod_GamePage::ApplyDefaultMods(void)
       else LastError.Empty();
     }
   }
+  SuppressDefaultModsSave = false;
   return added;
 }
 
@@ -900,7 +903,7 @@ int uMod_GamePage::AddTextureInternal( const wxString &file_name, bool update_ga
   LauncherPanel->Layout();
   LauncherSizer->FitInside(LauncherPanel);
 
-  SaveDefaultModsList();
+  if (!SuppressDefaultModsSave) SaveDefaultModsList();
   if (update_game) return UpdateGame();
   return 0;
 }
