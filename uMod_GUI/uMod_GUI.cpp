@@ -24,7 +24,60 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 
+namespace {
+struct RelaunchInfo
+{
+  wxString exe_path;
+  wxString command_line;
+  wxString dll_path;
+  HANDLE process;
+};
 
+static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line, const wxString &dll_path, HANDLE &process)
+{
+  STARTUPINFOW si = {0};
+  si.cb = sizeof(STARTUPINFO);
+  PROCESS_INFORMATION pi = {0};
+
+  wxString path = game_path.BeforeLast('\\');
+  wxString exe;
+
+  if (!command_line.IsEmpty()) exe << "\"" << game_path << "\" " << command_line;
+  else exe = game_path;
+
+  bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
+                              CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
+  if (!result) return false;
+
+  Inject(pi.hProcess, dll_path.wc_str(), "Nothing");
+  ResumeThread(pi.hThread);
+  CloseHandle(pi.hThread);
+  process = pi.hProcess;
+  return true;
+}
+
+static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
+{
+  RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
+  if (info == NULL) return 0;
+
+  DWORD wait = WaitForSingleObject(info->process, 5000);
+  CloseHandle(info->process);
+  info->process = INVALID_HANDLE_VALUE;
+
+  if (wait == WAIT_OBJECT_0)
+  {
+    HANDLE proc = INVALID_HANDLE_VALUE;
+    if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
+    {
+      if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
+    }
+  }
+
+  delete info;
+  return 0;
+}
+}
 
 
 
@@ -286,30 +339,29 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_line)
 {
   if (game_path.IsEmpty()) return -1;
-  STARTUPINFOW si = {0};
-  si.cb = sizeof(STARTUPINFO);
-  PROCESS_INFORMATION pi = {0};
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  wxString dll = exe_path.GetPath();
+  dll.Append( L"\\" uMod_d3d9_DI_dll);
 
-  wxString path = game_path.BeforeLast('\\');
-  wxString exe;
-
-  if (!command_line.IsEmpty()) exe << "\"" << game_path << "\" " << command_line;
-  else exe = game_path;
-
-  bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
-                              CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
-  if(!result)
+  HANDLE process = INVALID_HANDLE_VALUE;
+  if (!StartProcessWithInject(game_path, command_line, dll, process))
   {
     wxMessageBox( Language->Error_ProcessNotStarted, "ERROR",  wxOK|wxICON_ERROR);
     return -1;
   }
 
-  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
-  wxString dll = exe_path.GetPath();
-  dll.Append( L"\\" uMod_d3d9_DI_dll);
-
-  Inject(pi.hProcess, dll.wc_str(), "Nothing");
-  ResumeThread(pi.hThread);
+  RelaunchInfo *info = new RelaunchInfo;
+  info->exe_path = game_path;
+  info->command_line = command_line;
+  info->dll_path = dll;
+  info->process = process;
+  HANDLE thread = CreateThread(NULL, 0, RelaunchIfNeeded, info, 0, NULL);
+  if (thread != NULL) CloseHandle(thread);
+  else
+  {
+    if (process != INVALID_HANDLE_VALUE) CloseHandle(process);
+    delete info;
+  }
   return 0;
 }
 
