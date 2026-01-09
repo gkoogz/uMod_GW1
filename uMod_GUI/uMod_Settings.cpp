@@ -19,6 +19,8 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
 
 
 uMod_Settings::uMod_Settings(void)
@@ -40,17 +42,29 @@ uMod_Settings::uMod_Settings(uMod_Settings &set)
 }
 
 
-#define SETTINGS_FILE "uMod_Settings.txt"
+static wxString GetSettingsPath(void)
+{
+  wxString dir = wxStandardPaths::Get().GetUserLocalDataDir();
+  if (!dir.IsEmpty())
+  {
+    wxFileName::Mkdir(dir, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+    wxFileName file_name(dir, "uMod_Settings.txt");
+    return file_name.GetFullPath();
+  }
+  return "uMod_Settings.txt";
+}
 
 int uMod_Settings::Load(void)
 {
   wxFile file;
 
-  if (!file.Access(SETTINGS_FILE, wxFile::read)) {return -1;}
-  file.Open(SETTINGS_FILE, wxFile::read);
+  wxString settings_path = GetSettingsPath();
+  if (!file.Access(settings_path, wxFile::read)) {return 0;}
+  file.Open(settings_path, wxFile::read);
   if (!file.IsOpened()) return -1;
 
   unsigned len = file.Length();
+  if (len == 0 || (len % 2) != 0) {return -1;}
 
   unsigned char* buffer;
   try {buffer = new unsigned char [len+2];}
@@ -111,8 +125,12 @@ int uMod_Settings::Load(void)
 
 int uMod_Settings::Save(void)
 {
+  wxString settings_path = GetSettingsPath();
+  wxFileName settings_file(settings_path);
+  wxFileName::Mkdir(settings_file.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+  wxString temp_path = settings_path + ".tmp";
   wxFile file;
-  file.Open(SETTINGS_FILE, wxFile::write);
+  file.Open(temp_path, wxFile::write);
   if (!file.IsOpened()) return -1;
 
   wxString content;
@@ -134,7 +152,7 @@ int uMod_Settings::Save(void)
   file.Write( content.wc_str(), content.Len()*2);
 
   file.Close();
+  wxRenameFile(temp_path, settings_path, true);
 
   return 0;
 }
-
