@@ -21,6 +21,9 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #ifndef uMod_GAMEPAGE_H_
 #define uMod_GAMEPAGE_H_
 #include "uMod_Main.h"
+#include <wx/imaglist.h>
+#include <wx/listctrl.h>
+#include <wx/listbase.h>
 
 // this page is opened if a game is started.
 class uMod_GamePage : public wxPanel
@@ -72,6 +75,13 @@ private:
   int ApplyDefaultMods(void);
   void ClearModsList(bool clear_defaults);
   int AddTextureInternal(const wxString &file_name, bool update_game);
+  void RefreshSavedTextures(void);
+  void ToggleSavedTextureSelection(long item);
+  bool IsSavedTextureSelected(long item) const;
+  bool ExtractTextureHash(const wxString &file_name, unsigned long &hash) const;
+  int CreateTpfPackage(const wxString &output_path, const wxArrayString &files, const wxString &name, const wxString &author);
+  void OnButtonSavePackage(wxCommandEvent& WXUNUSED(event));
+  void OnSavedTextureClick(wxListEvent &event);
 
   int GetSettings(void);
   int SetColour( wxTextCtrl** txt, int *colour);
@@ -96,6 +106,7 @@ private:
   wxBoxSizer *LauncherSizer;
   wxBoxSizer *ModMakerSizer;
   wxStaticBoxSizer *ModsSizer;
+  wxStaticBoxSizer *SavedTexturesSizer;
 
   wxNotebook *Notebook;
   wxScrolledWindow *LauncherPanel;
@@ -116,6 +127,17 @@ private:
   wxCheckBox *SaveAllTextures;
   wxCheckBox *SaveSingleTexture;
   wxTextCtrl *SavePath;
+  wxListCtrl *SavedTexturesList;
+  wxImageList *SavedTexturesImages;
+  wxImageList *SavedTexturesStateImages;
+  wxStaticText *PackageNameLabel;
+  wxStaticText *PackageAuthorLabel;
+  wxTextCtrl *PackageName;
+  wxTextCtrl *PackageAuthor;
+  wxButton *SavePackageButton;
+  int SavedTexturesPlaceholderIndex;
+  int SavedTexturesUncheckedIndex;
+  int SavedTexturesCheckedIndex;
 
   wxBoxSizer **CheckBoxHSizers;
   wxButton **CheckButtonUp;
@@ -129,6 +151,9 @@ private:
 
   wxArrayString Files;
   wxArrayString DefaultMods;
+  wxArrayString SavedTextureFiles;
+  wxArrayInt SavedTextureChecked;
+  bool SuppressDefaultModsSave;
   uMod_GameInfo Game;
   uMod_GameInfo GameOld;
 

@@ -52,6 +52,7 @@ public:
   wxString ButtonDirectory;
   wxString ButtonUpdate;
   wxString ButtonReload;
+  wxString ButtonSavePackage;
   wxString ButtonLaunch;
   wxString ButtonLocateExe;
   wxString SelectModsHint;
@@ -64,6 +65,12 @@ public:
   wxString CheckBoxSaveSingleTexture;
   wxString CheckBoxSaveAllTextures;
   wxString TextCtrlSavePath;
+  wxString SavedTexturesHeader;
+  wxString SavedTexturesHint;
+  wxString SavedTexturesEmpty;
+  wxString PackageNameLabel;
+  wxString PackageAuthorLabel;
+  wxString SavePackageDialog;
   wxString CommandLineHint;
   wxString TabLauncher;
   wxString TabModMaker;
@@ -92,6 +99,7 @@ public:
   wxString Error_NoSavePath;
   wxString Error_KeyNotSet;
   wxString Error_SaveFile;
+  wxString Error_NoTexturesSelected;
   wxString Error_NoPipe;
   wxString Error_WritePipe;
   wxString Error_FlushPipe;

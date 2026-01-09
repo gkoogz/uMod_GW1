@@ -199,6 +199,7 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, ButtonDirectory)
     CheckEntry( command, msg, ButtonUpdate)
     CheckEntry( command, msg, ButtonReload)
+    CheckEntry( command, msg, ButtonSavePackage)
     CheckEntry( command, msg, ButtonLaunch)
     CheckEntry( command, msg, ButtonLocateExe)
     CheckEntry( command, msg, SelectModsHint)
@@ -209,6 +210,12 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, CheckBoxSaveSingleTexture)
     CheckEntry( command, msg, CheckBoxSaveAllTextures)
     CheckEntry( command, msg, TextCtrlSavePath)
+    CheckEntry( command, msg, SavedTexturesHeader)
+    CheckEntry( command, msg, SavedTexturesHint)
+    CheckEntry( command, msg, SavedTexturesEmpty)
+    CheckEntry( command, msg, PackageNameLabel)
+    CheckEntry( command, msg, PackageAuthorLabel)
+    CheckEntry( command, msg, SavePackageDialog)
     CheckEntry( command, msg, CommandLineHint)
     CheckEntry( command, msg, TabLauncher)
     CheckEntry( command, msg, TabModMaker)
@@ -231,6 +238,7 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, Error_NoSavePath)
     CheckEntry( command, msg, Error_KeyNotSet)
     CheckEntry( command, msg, Error_SaveFile)
+    CheckEntry( command, msg, Error_NoTexturesSelected)
     CheckEntry( command, msg, Error_NoPipe)
     CheckEntry( command, msg, Error_WritePipe)
     CheckEntry( command, msg, Error_FlushPipe)
@@ -279,6 +287,7 @@ int uMod_Language::LoadDefault(void)
   ButtonDirectory = "Set save directory";
   ButtonUpdate = "Update";
   ButtonReload = "Update (reload)";
+  ButtonSavePackage = "Save Package";
   ButtonLaunch = "Launch Guild Wars";
   ButtonLocateExe = "Locate Guild Wars Executable";
   SelectModsHint = "Mods will be injected when the game launches.";
@@ -291,6 +300,12 @@ int uMod_Language::LoadDefault(void)
   CheckBoxSaveSingleTexture = "Save single texture";
   CheckBoxSaveAllTextures = "Save all textures";
   TextCtrlSavePath = "Save path:";
+  SavedTexturesHeader = "Saved Textures";
+  SavedTexturesHint = "Set a save directory to view textures.";
+  SavedTexturesEmpty = "No DDS textures were found in the save directory.";
+  PackageNameLabel = "Name:";
+  PackageAuthorLabel = "Author:";
+  SavePackageDialog = "Save texture package";
   CommandLineHint = "Command line arguments...";
   TabLauncher = "Launcher";
   TabModMaker = "Mod Maker";
@@ -319,6 +334,7 @@ int uMod_Language::LoadDefault(void)
   Error_NoSavePath = "You did not set a save path.";
   Error_KeyNotSet = "At least one key is not set.";
   Error_SaveFile = "Could not save to file.";
+  Error_NoTexturesSelected = "Select at least one texture to package.";
   Error_NoPipe = "Pipe is not opened.";
   Error_WritePipe = "Could not write in pipe.";
   Error_FlushPipe = "Could not flush pipe buffer.";

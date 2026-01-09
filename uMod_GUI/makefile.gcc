@@ -31,6 +31,7 @@ MINIMAL_CXXFLAGS = $(__DEBUGINFO) $(__OPTIMIZEFLAG_2) $(__THREADSFLAG) \
 	$(__EXCEPTIONSFLAG_6) -Wno-ctor-dtor-privacy $(CPPFLAGS) $(CXXFLAGS)
 MINIMAL_OBJECTS =  \
 	$(OBJS)\uMod_rc.o \
+	$(OBJS)\zip.o \
 	$(OBJS)\unzip.o \
 	$(OBJS)\uMod_DirectInjection.o \
 	$(OBJS)\uMod_GUI.o \
@@ -239,6 +240,9 @@ $(OBJS_exe)\uMod.exe: $(MINIMAL_OBJECTS) $(OBJS)\uMod_rc.o
 
 $(OBJS)\uMod_rc.o: uMod.rc uMod.ico
 	windres --use-temp-file -i $< -o $@
+
+$(OBJS)\zip.o: ./zip.cpp
+	$(CXX) -c -o $@ $(MINIMAL_CXXFLAGS)  $(CPPDEPS) $<
 
 $(OBJS)\unzip.o: ./unzip.cpp
 	$(CXX) -c -o $@ $(MINIMAL_CXXFLAGS)  $(CPPDEPS) $<

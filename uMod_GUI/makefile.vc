@@ -33,6 +33,7 @@ MINIMAL_CXXFLAGS = /M$(__RUNTIME_LIBS_10)$(__DEBUGRUNTIME_4) /DWIN32 \
 	 /DNOPCH $(__RTTIFLAG_11) $(__EXCEPTIONSFLAG_12) \
 	$(CPPFLAGS) $(CXXFLAGS)
 MINIMAL_OBJECTS = \
+	$(OBJS)\zip.obj \
 	$(OBJS)\unzip.obj \
 	$(OBJS)\uMod_DirectInjection.obj \
 	$(OBJS)\uMod_GUI.obj \
@@ -367,6 +368,9 @@ $(OBJS)\uMod_GUI.res: uMod.rc
 	
 $(OBJS)\unzip.obj: .\unzip.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\unzip.cpp
+
+$(OBJS)\zip.obj: .\zip.cpp
+  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) /DUNICODE /D_CRT_SECURE_NO_WARNINGS /wd4458 /wd4996 .\zip.cpp
 
 $(OBJS)\uMod_DirectInjection.obj: .\uMod_DirectInjection.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_DirectInjection.cpp
