@@ -348,13 +348,14 @@ int uMod_GamePage::LoadDefaultModsList(void)
   if (!file.IsOpened()) return 0;
 
   unsigned len = file.Length();
-  if (len == 0 || (len % 2) != 0)
+  if (len == 0)
   {
     file.Close();
     wxRemoveFile(DEFAULT_MODS_FILE);
     if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
     return 0;
   }
+
   unsigned char* buffer;
   try {buffer = new unsigned char [len+2];}
   catch (...) {return -1;}
@@ -363,12 +364,29 @@ int uMod_GamePage::LoadDefaultModsList(void)
   file.Close();
   if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_FILE); return -1;}
 
-  wchar_t *buff = (wchar_t*)buffer;
-  len/=2;
-  buff[len]=0;
-
   wxString content;
-  content =  buff;
+  bool looks_utf16 = false;
+  if (len % 2 == 0)
+  {
+    unsigned int zero_high = 0;
+    unsigned int pairs = len / 2;
+    for (unsigned int i=1; i<len; i+=2) if (buffer[i]==0) zero_high++;
+    if (pairs>0 && zero_high > (pairs * 7 / 10)) looks_utf16 = true;
+  }
+
+  if (looks_utf16)
+  {
+    wchar_t *buff = (wchar_t*)buffer;
+    len/=2;
+    buff[len]=0;
+    content = buff;
+  }
+  else
+  {
+    buffer[len]=0;
+    content = wxString::FromUTF8((const char*)buffer);
+    if (content.IsEmpty()) content = (const char*)buffer;
+  }
   delete [] buffer;
 
   wxStringTokenizer token( content, "\n");
@@ -415,7 +433,7 @@ int uMod_GamePage::LoadDefaultModsState(void)
     if (file.IsOpened())
     {
       unsigned len = file.Length();
-      if (len == 0 || (len % 2) != 0)
+      if (len == 0)
       {
         file.Close();
         wxRemoveFile(DEFAULT_MODS_STATE_FILE);
@@ -423,19 +441,41 @@ int uMod_GamePage::LoadDefaultModsState(void)
       }
       else
       {
-      unsigned char* buffer;
-      try {buffer = new unsigned char [len+2];}
-      catch (...) {return -1;}
+        unsigned char* buffer;
+        try {buffer = new unsigned char [len+2];}
+        catch (...) {return -1;}
 
-      unsigned int result = file.Read( buffer, len);
-      file.Close();
-      if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_STATE_FILE); return -1;}
+        unsigned int result = file.Read( buffer, len);
+        file.Close();
+        if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_STATE_FILE); return -1;}
 
-      wchar_t *buff = (wchar_t*)buffer;
-      len/=2;
-      buff[len]=0;
-      enabled = (buff[0] == L'1');
-      delete [] buffer;
+        bool looks_utf16 = false;
+        if (len % 2 == 0)
+        {
+          unsigned int zero_high = 0;
+          unsigned int pairs = len / 2;
+          for (unsigned int i=1; i<len; i+=2) if (buffer[i]==0) zero_high++;
+          if (pairs>0 && zero_high > (pairs * 7 / 10)) looks_utf16 = true;
+        }
+
+        wxString content;
+        if (looks_utf16)
+        {
+          wchar_t *buff = (wchar_t*)buffer;
+          len/=2;
+          buff[len]=0;
+          content = buff;
+        }
+        else
+        {
+          buffer[len]=0;
+          content = wxString::FromUTF8((const char*)buffer);
+          if (content.IsEmpty()) content = (const char*)buffer;
+        }
+        delete [] buffer;
+        content.Trim(true);
+        content.Trim(false);
+        enabled = (!content.IsEmpty() && content[0] == L'1');
       }
     }
   }
@@ -468,7 +508,7 @@ int uMod_GamePage::ApplyDefaultMods(void)
   {
     const wxString &file_name = DefaultMods[i];
     bool exists = false;
-    for (int j=0; j<NumberOfEntry; j++) if (Files[j]==file_name) {exists = true; break;}
+    for (int j=0; j<NumberOfEntry; j++) if (Files[j].CmpNoCase(file_name)==0) {exists = true; break;}
     if (!exists)
     {
       if (AddTextureInternal(file_name, false)==0) added++;
@@ -811,6 +851,10 @@ int uMod_GamePage::AddTexture( const wxString &file_name)
 
 int uMod_GamePage::AddTextureInternal( const wxString &file_name, bool update_game)
 {
+  for (int i=0; i<NumberOfEntry; i++)
+  {
+    if (Files[i].CmpNoCase(file_name)==0) return 0;
+  }
   if (NumberOfEntry>=MaxNumberOfEntry)
   {
     if (GetMoreMemory( CheckBoxes, MaxNumberOfEntry, MaxNumberOfEntry+1024)) {LastError = Language->Error_Memory; return -1;}
