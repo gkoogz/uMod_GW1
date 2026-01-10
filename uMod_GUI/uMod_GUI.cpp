@@ -339,7 +339,10 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
   }
   if (Server!=NULL)
   {
-    Server->Delete();
+    if (KillServer() == 0)
+    {
+      Server->Wait();
+    }
     delete Server;
     Server = NULL;
   }
