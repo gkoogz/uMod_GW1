@@ -53,6 +53,8 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "wx\notebook.h"
 #include <wx/file.h>
 #include <wx/dir.h>
+#include <wx/filename.h>
+#include <wx/stdpaths.h>
 #include <wx/tokenzr.h>
 #include <wx/dynlib.h>
 //#include <wx/thread.h>
@@ -98,8 +100,9 @@ enum
   ID_Button_Texture, //this entry must be the last!!
 };
 
-#define ABORT_SERVER L"uMod_Abort_Server"
-#define uMod_d3d9_DI_dll L"uMod_d3d9_DI.dll"
+#define ABORT_SERVER L"uMod_Reforged_Abort_Server"
+#define uMod_d3d9_DI_dll L"uMod_Reforged_d3d9_DI.dll"
+#define IDR_UMOD_REFORGED_DLL 101
 
 #include "uMod_AddTexture.h"
 #include "uMod_Settings.h"
@@ -148,6 +151,26 @@ int GetMoreMemory(T* &old_array, int old_num, int new_num)
   }
   old_array = new_array;
   return 0;
+}
+
+inline wxString GetReforgedAppDataDir(void)
+{
+  wxString base = wxStandardPaths::Get().GetUserLocalDataDir();
+  if (base.IsEmpty()) base = wxStandardPaths::Get().GetUserConfigDir();
+  wxFileName dir(base, "");
+  if (!dir.GetPath().EndsWith(uMod_APP_DIR)) dir.AppendDir(uMod_APP_DIR);
+  wxString full_path = dir.GetPath();
+  if (!full_path.IsEmpty())
+  {
+    wxFileName::Mkdir(full_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+  }
+  return full_path;
+}
+
+inline wxString GetReforgedAppDataPath(const wxString &file_name)
+{
+  wxFileName path(GetReforgedAppDataDir(), file_name);
+  return path.GetFullPath();
 }
 
 #endif

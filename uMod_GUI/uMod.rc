@@ -1,1 +1,2 @@
 MAINICON ICON "uMod.ico"
+101 RCDATA "bin\\uMod_Reforged_d3d9_DI.dll"

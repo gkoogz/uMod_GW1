@@ -43,7 +43,7 @@ uMod_Settings::uMod_Settings(uMod_Settings &set)
 
 static wxString GetSettingsPath(void)
 {
-  return "uMod_Settings.txt";
+  return GetReforgedAppDataPath("uMod_Reforged_Settings.txt");
 }
 
 int uMod_Settings::Load(void)

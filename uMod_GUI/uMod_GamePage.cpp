@@ -20,13 +20,18 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "zip.h"
 #include <wx/filename.h>
 #include <wx/filedlg.h>
-#include <wx/artprov.h>
-#include <wx/renderer.h>
 #include <wx/tooltip.h>
 #include <cstring>
 
-static const wchar_t* DEFAULT_MODS_FILE = L"uMod_DefaultMods.txt";
-static const wchar_t* DEFAULT_MODS_STATE_FILE = L"uMod_DefaultModsEnabled.txt";
+static wxString GetDefaultModsPath(void)
+{
+  return GetReforgedAppDataPath("uMod_Reforged_DefaultMods.txt");
+}
+
+static wxString GetDefaultModsStatePath(void)
+{
+  return GetReforgedAppDataPath("uMod_Reforged_DefaultModsEnabled.txt");
+}
 
 
 uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame)
@@ -97,26 +102,35 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherPanel->SetScrollRate(0, 20);
   LauncherSizer->FitInside(LauncherPanel);
 
-  SizerKeys[0] = new wxBoxSizer(wxHORIZONTAL);
-  SizerKeys[1] = new wxBoxSizer(wxHORIZONTAL);
+  wxBoxSizer *savePathRow = new wxBoxSizer(wxHORIZONTAL);
+  DirectoryButton = new wxButton( ModMakerPanel, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(180,24));
+  SavePath = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextCtrlSavePath, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+  savePathRow->Add( (wxWindow*) DirectoryButton, 0, wxRIGHT, 10);
+  savePathRow->Add( (wxWindow*) SavePath, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( savePathRow, 0, wxEXPAND, 0);
+  ModMakerSizer->AddSpacer(10);
 
-  TextKeyBack = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->KeyBack, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-  SizerKeys[0]->Add( (wxWindow*) TextKeyBack, 1, wxEXPAND, 0);
+  const wxSize key_button_size(180, 24);
+  wxBoxSizer *keyBackRow = new wxBoxSizer(wxHORIZONTAL);
+  KeyBackButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyBack, wxDefaultPosition, key_button_size);
   ChoiceKeyBack = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  SizerKeys[1]->Add( (wxWindow*) ChoiceKeyBack, 1, wxEXPAND, 0);
+  keyBackRow->Add( (wxWindow*) KeyBackButton, 0, wxRIGHT, 10);
+  keyBackRow->Add( (wxWindow*) ChoiceKeyBack, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( keyBackRow, 0, wxEXPAND | wxBOTTOM, 6);
 
-  TextKeySave = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->KeySave, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-  SizerKeys[0]->Add( (wxWindow*) TextKeySave, 1, wxEXPAND, 0);
+  wxBoxSizer *keySaveRow = new wxBoxSizer(wxHORIZONTAL);
+  KeySaveButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeySave, wxDefaultPosition, key_button_size);
   ChoiceKeySave = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  SizerKeys[1]->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
+  keySaveRow->Add( (wxWindow*) KeySaveButton, 0, wxRIGHT, 10);
+  keySaveRow->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( keySaveRow, 0, wxEXPAND | wxBOTTOM, 6);
 
-  TextKeyNext = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->KeyNext, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-  SizerKeys[0]->Add( (wxWindow*) TextKeyNext, 1, wxEXPAND, 0);
+  wxBoxSizer *keyNextRow = new wxBoxSizer(wxHORIZONTAL);
+  KeyNextButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyNext, wxDefaultPosition, key_button_size);
   ChoiceKeyNext = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  SizerKeys[1]->Add( (wxWindow*) ChoiceKeyNext, 1, wxEXPAND, 0);
-
-  ModMakerSizer->Add( SizerKeys[0], 0, wxEXPAND, 0);
-  ModMakerSizer->Add( SizerKeys[1], 0, wxEXPAND, 0);
+  keyNextRow->Add( (wxWindow*) KeyNextButton, 0, wxRIGHT, 10);
+  keyNextRow->Add( (wxWindow*) ChoiceKeyNext, 1, wxEXPAND, 0);
+  ModMakerSizer->Add( keyNextRow, 0, wxEXPAND, 0);
 
 
   FontColourSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -143,15 +157,6 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   SaveAllTextures = new wxCheckBox( ModMakerPanel, -1, Language->CheckBoxSaveAllTextures);
   ModMakerSizer->Add( (wxWindow*) SaveAllTextures, 0, wxEXPAND, 0);
 
-  wxBoxSizer *savePathRow = new wxBoxSizer(wxHORIZONTAL);
-  DirectoryButton = new wxButton( ModMakerPanel, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(180,24));
-  SavePath = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextCtrlSavePath, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
-  savePathRow->Add( (wxWindow*) DirectoryButton, 0, wxRIGHT, 10);
-  savePathRow->Add( (wxWindow*) SavePath, 1, wxEXPAND, 0);
-  ModMakerSizer->Add( savePathRow, 0, wxEXPAND, 0);
-
-  ModMakerSizer->AddSpacer(10);
-
   wxBoxSizer *updateRow = new wxBoxSizer(wxHORIZONTAL);
   UpdateButton = new wxButton( ModMakerPanel, ID_Button_Update, Language->ButtonUpdate, wxDefaultPosition, wxSize(140,24));
   ReloadButton = new wxButton( ModMakerPanel, ID_Button_Reload, Language->ButtonReload, wxDefaultPosition, wxSize(140,24));
@@ -162,34 +167,9 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   ModMakerSizer->AddSpacer(10);
 
   SavedTexturesSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, Language->SavedTexturesHeader);
-  SavedTexturesList = new wxListCtrl(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxSize(-1, 240), wxLC_REPORT | wxLC_SINGLE_SEL);
-  SavedTexturesList->InsertColumn(0, Language->SavedTexturesHeader);
-  SavedTexturesImages = new wxImageList(32, 32, true);
-  wxBitmap placeholder = wxArtProvider::GetBitmap(wxART_MISSING_IMAGE, wxART_OTHER, wxSize(32, 32));
-  SavedTexturesPlaceholderIndex = SavedTexturesImages->Add(placeholder);
-  SavedTexturesList->SetImageList(SavedTexturesImages, wxIMAGE_LIST_SMALL);
-  SavedTexturesStateImages = new wxImageList(16, 16, true);
-  wxBitmap unchecked(16, 16);
-  {
-    wxMemoryDC dc(unchecked);
-    dc.SetBackground(*wxWHITE_BRUSH);
-    dc.Clear();
-    wxRendererNative::Get().DrawCheckBox(ModMakerPanel, dc, wxRect(0, 0, 16, 16), 0);
-    dc.SelectObject(wxNullBitmap);
-  }
-  wxBitmap checked(16, 16);
-  {
-    wxMemoryDC dc(checked);
-    dc.SetBackground(*wxWHITE_BRUSH);
-    dc.Clear();
-    wxRendererNative::Get().DrawCheckBox(ModMakerPanel, dc, wxRect(0, 0, 16, 16), wxCONTROL_CHECKED);
-    dc.SelectObject(wxNullBitmap);
-  }
-  SavedTexturesUncheckedIndex = SavedTexturesStateImages->Add(unchecked);
-  SavedTexturesCheckedIndex = SavedTexturesStateImages->Add(checked);
-  SavedTexturesList->SetImageList(SavedTexturesStateImages, wxIMAGE_LIST_STATE);
-  SavedTexturesSizer->Add(SavedTexturesList, 1, wxEXPAND, 0);
-  ModMakerSizer->Add(SavedTexturesSizer, 1, wxEXPAND, 0);
+  SavedTexturesList = new wxCheckListBox(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
+  SavedTexturesSizer->Add(SavedTexturesList, 0, wxEXPAND, 0);
+  ModMakerSizer->Add(SavedTexturesSizer, 0, wxEXPAND, 0);
 
   wxFlexGridSizer *packageSizer = new wxFlexGridSizer(2, 2, 8, 10);
   PackageNameLabel = new wxStaticText(ModMakerPanel, wxID_ANY, Language->PackageNameLabel);
@@ -229,8 +209,6 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
   Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSavePackage, this, SavePackageButton->GetId());
-  Bind( wxEVT_COMMAND_LIST_ITEM_SELECTED, &uMod_GamePage::OnSavedTextureClick, this, SavedTexturesList->GetId());
-
   UpdateLaunchState();
   LoadDefaultModsList();
   if (LoadDefaultMods->GetValue()) ApplyDefaultMods();
@@ -251,8 +229,6 @@ uMod_GamePage::~uMod_GamePage(void)
   delete [] CheckButtonDown;
   delete [] CheckButtonDelete;
   delete [] CheckBoxes;
-  delete SavedTexturesImages;
-  delete SavedTexturesStateImages;
 }
 
 void uMod_GamePage::EnableOpenButton( bool enable)
@@ -340,19 +316,20 @@ int uMod_GamePage::LoadDefaultModsList(void)
 {
   DefaultMods.Empty();
   wxFile file;
-  if (!file.Access( DEFAULT_MODS_FILE, wxFile::read))
+  wxString default_mods_path = GetDefaultModsPath();
+  if (!file.Access( default_mods_path, wxFile::read))
   {
     if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
     return 0;
   }
-  file.Open( DEFAULT_MODS_FILE, wxFile::read);
+  file.Open( default_mods_path, wxFile::read);
   if (!file.IsOpened()) return 0;
 
   unsigned len = file.Length();
   if (len == 0)
   {
     file.Close();
-    wxRemoveFile(DEFAULT_MODS_FILE);
+    wxRemoveFile(default_mods_path);
     if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
     return 0;
   }
@@ -363,7 +340,7 @@ int uMod_GamePage::LoadDefaultModsList(void)
 
   unsigned int result = file.Read( buffer, len);
   file.Close();
-  if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_FILE); return -1;}
+  if (result != len) {delete [] buffer; wxRemoveFile(default_mods_path); return -1;}
 
   wxString content;
   bool looks_utf16 = false;
@@ -411,7 +388,8 @@ int uMod_GamePage::SaveDefaultModsList(void)
   }
 
   wxFile file;
-  file.Open( DEFAULT_MODS_FILE, wxFile::write);
+  wxString default_mods_path = GetDefaultModsPath();
+  file.Open( default_mods_path, wxFile::write);
   if (!file.IsOpened()) return -1;
   wxString content;
   for (unsigned int i=0; i<DefaultMods.GetCount(); i++)
@@ -428,16 +406,17 @@ int uMod_GamePage::LoadDefaultModsState(void)
 {
   bool enabled = true;
   wxFile file;
-  if (file.Access( DEFAULT_MODS_STATE_FILE, wxFile::read))
+  wxString default_mods_state_path = GetDefaultModsStatePath();
+  if (file.Access( default_mods_state_path, wxFile::read))
   {
-    file.Open( DEFAULT_MODS_STATE_FILE, wxFile::read);
+    file.Open( default_mods_state_path, wxFile::read);
     if (file.IsOpened())
     {
       unsigned len = file.Length();
       if (len == 0)
       {
         file.Close();
-        wxRemoveFile(DEFAULT_MODS_STATE_FILE);
+        wxRemoveFile(default_mods_state_path);
         enabled = (DefaultMods.GetCount()>0);
       }
       else
@@ -448,7 +427,7 @@ int uMod_GamePage::LoadDefaultModsState(void)
 
         unsigned int result = file.Read( buffer, len);
         file.Close();
-        if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_STATE_FILE); return -1;}
+        if (result != len) {delete [] buffer; wxRemoveFile(default_mods_state_path); return -1;}
 
         bool looks_utf16 = false;
         if (len % 2 == 0)
@@ -493,7 +472,8 @@ int uMod_GamePage::SaveDefaultModsState(void)
 {
   if (LoadDefaultMods==NULL) return 0;
   wxFile file;
-  file.Open( DEFAULT_MODS_STATE_FILE, wxFile::write);
+  wxString default_mods_state_path = GetDefaultModsStatePath();
+  file.Open( default_mods_state_path, wxFile::write);
   if (!file.IsOpened()) return -1;
   wxString content = LoadDefaultMods->GetValue() ? "1" : "0";
   file.Write( content.wc_str(), content.Len()*2);
@@ -558,88 +538,61 @@ void uMod_GamePage::ClearModsList(bool clear_defaults)
 
 void uMod_GamePage::RefreshSavedTextures(void)
 {
-  if (SavedTexturesList==NULL || SavedTexturesImages==NULL) return;
-  SavedTexturesList->DeleteAllItems();
+  if (SavedTexturesList==NULL) return;
+  SavedTexturesList->Clear();
   SavedTextureFiles.Clear();
-  SavedTextureChecked.Clear();
-
-  SavedTexturesImages->RemoveAll();
-  wxBitmap placeholder = wxArtProvider::GetBitmap(wxART_MISSING_IMAGE, wxART_OTHER, wxSize(32, 32));
-  SavedTexturesPlaceholderIndex = SavedTexturesImages->Add(placeholder);
 
   wxString path = Game.GetSavePath();
   if (path.IsEmpty())
   {
-    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesHint, SavedTexturesPlaceholderIndex);
-    SavedTexturesList->SetItemData(item, -1);
-    SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
+    SavedTexturesList->Append(Language->SavedTexturesHint);
+    UpdateSavedTexturesListSize();
     return;
   }
 
   wxDir dir(path);
   if (!dir.IsOpened())
   {
-    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesEmpty, SavedTexturesPlaceholderIndex);
-    SavedTexturesList->SetItemData(item, -1);
-    SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
+    SavedTexturesList->Append(Language->SavedTexturesEmpty);
+    UpdateSavedTexturesListSize();
     return;
   }
 
   wxString filename;
   bool cont = dir.GetFirst(&filename, "*.dds", wxDIR_FILES);
-  int index = 0;
   while (cont)
   {
     wxFileName full_path(path, filename);
     wxString file_path = full_path.GetFullPath();
-    int image_index = SavedTexturesPlaceholderIndex;
-    wxImage image;
-    if (image.LoadFile(file_path, wxBITMAP_TYPE_ANY) && image.IsOk())
-    {
-      image.Rescale(32, 32, wxIMAGE_QUALITY_HIGH);
-      image_index = SavedTexturesImages->Add(wxBitmap(image));
-    }
-
-    long item = SavedTexturesList->InsertItem(index, filename, image_index);
+    int item = SavedTexturesList->Append(filename);
     SavedTextureFiles.Add(file_path);
-    SavedTexturesList->SetItemData(item, SavedTextureFiles.GetCount() - 1);
-    SavedTextureChecked.Add(1);
-    int state = SavedTexturesCheckedIndex + 1;
-    const long state_mask = 0xF000;
-    SavedTexturesList->SetItemState(item, state << 12, state_mask);
-    index++;
+    SavedTexturesList->Check(item, true);
     cont = dir.GetNext(&filename);
   }
 
   if (SavedTextureFiles.IsEmpty())
   {
-    long item = SavedTexturesList->InsertItem(0, Language->SavedTexturesEmpty, SavedTexturesPlaceholderIndex);
-    SavedTexturesList->SetItemData(item, -1);
+    SavedTexturesList->Append(Language->SavedTexturesEmpty);
   }
 
-  SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
+  UpdateSavedTexturesListSize();
 }
 
-void uMod_GamePage::ToggleSavedTextureSelection(long item)
+void uMod_GamePage::UpdateSavedTexturesListSize(void)
 {
-  if (item < 0 || item >= (long)SavedTextureChecked.GetCount()) return;
-  SavedTextureChecked[item] = SavedTextureChecked[item] ? 0 : 1;
-  int state = SavedTextureChecked[item] ? SavedTexturesCheckedIndex + 1 : SavedTexturesUncheckedIndex + 1;
-  const long state_mask = 0xF000;
-  SavedTexturesList->SetItemState(item, state << 12, state_mask);
-}
+  if (SavedTexturesList==NULL) return;
+  int item_count = SavedTexturesList->GetCount();
+  if (item_count <= 0) item_count = 1;
 
-bool uMod_GamePage::IsSavedTextureSelected(long item) const
-{
-  if (item < 0 || item >= (long)SavedTextureChecked.GetCount()) return false;
-  return SavedTextureChecked[item] != 0;
-}
-
-void uMod_GamePage::OnSavedTextureClick(wxListEvent &event)
-{
-  long item = event.GetIndex();
-  if (item < 0) return;
-  ToggleSavedTextureSelection(item);
+  int row_height = SavedTexturesList->GetCharHeight() + 6;
+  int total_height = (row_height * item_count) + 6;
+  SavedTexturesList->SetMinSize(wxSize(-1, total_height));
+  SavedTexturesList->SetMaxSize(wxSize(-1, total_height));
+  if (ModMakerPanel!=NULL && ModMakerSizer!=NULL)
+  {
+    ModMakerPanel->Layout();
+    ModMakerSizer->FitInside(ModMakerPanel);
+  }
 }
 
 bool uMod_GamePage::ExtractTextureHash(const wxString &file_name, unsigned long &hash) const
@@ -1010,15 +963,11 @@ void uMod_GamePage::OnButtonSavePackage(wxCommandEvent& WXUNUSED(event))
   }
 
   wxArrayString selected_files;
-  long count = SavedTexturesList->GetItemCount();
-  for (long i=0; i<count; i++)
+  unsigned int count = SavedTexturesList->GetCount();
+  for (unsigned int i=0; i<count; i++)
   {
-    if (!IsSavedTextureSelected(i)) continue;
-    long data = SavedTexturesList->GetItemData(i);
-    if (data>=0 && data < (long)SavedTextureFiles.GetCount())
-    {
-      selected_files.Add(SavedTextureFiles[(unsigned int)data]);
-    }
+    if (!SavedTexturesList->IsChecked(i)) continue;
+    if (i < SavedTextureFiles.GetCount()) selected_files.Add(SavedTextureFiles[i]);
   }
 
   if (selected_files.IsEmpty())
@@ -1182,9 +1131,9 @@ int uMod_GamePage::UpdateLanguage(void)
     ModsSizer->GetStaticBox()->SetLabel( Language->LoadedMods);
   }
 
-  TextKeyBack->SetValue( Language->KeyBack);
-  TextKeySave->SetValue( Language->KeySave);
-  TextKeyNext->SetValue( Language->KeyNext);
+  KeyBackButton->SetLabel( Language->KeyBack);
+  KeySaveButton->SetLabel( Language->KeySave);
+  KeyNextButton->SetLabel( Language->KeyNext);
   FontColour[0]->SetValue( Language->FontColour);
   TextureColour[0]->SetValue( Language->TextureColour);
   SaveAllTextures->SetLabel( Language->CheckBoxSaveAllTextures);
@@ -1194,13 +1143,7 @@ int uMod_GamePage::UpdateLanguage(void)
   {
     SavedTexturesSizer->GetStaticBox()->SetLabel( Language->SavedTexturesHeader);
   }
-  if (SavedTexturesList!=NULL)
-  {
-    wxListItem item;
-    item.SetText(Language->SavedTexturesHeader);
-    SavedTexturesList->SetColumn(0, item);
-    SavedTexturesList->SetColumnWidth(0, wxLIST_AUTOSIZE_USEHEADER);
-  }
+  if (SavedTexturesList!=NULL) RefreshSavedTextures();
   if (PackageNameLabel!=NULL) PackageNameLabel->SetLabel( Language->PackageNameLabel);
   if (PackageAuthorLabel!=NULL) PackageAuthorLabel->SetLabel( Language->PackageAuthorLabel);
   if (SavePackageButton!=NULL) SavePackageButton->SetLabel( Language->ButtonSavePackage);
