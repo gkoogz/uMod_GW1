@@ -2581,7 +2581,7 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   TZipFileInfo zfi; zfi.nxt=NULL;
   strcpy(zfi.name,"");
 #ifdef UNICODE
-  WideCharToMultiByte(CP_UTF8,0,dstzn,-1,zfi.iname,MAX_PATH,0,0);
+  WideCharToMultiByte(CP_ACP,0,dstzn,-1,zfi.iname,MAX_PATH,0,0);
 #else
   strcpy(zfi.iname,dstzn);
 #endif
@@ -2827,4 +2827,3 @@ bool IsZipHandleZ(HZIP hz)
   TZipHandleData *han = (TZipHandleData*)hz;
   return (han->flag==2);
 }
-
