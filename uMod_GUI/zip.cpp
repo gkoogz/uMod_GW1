@@ -2669,9 +2669,9 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   zfi.crc = crc;
   zfi.siz = csize+passex;
   zfi.len = isize;
-  if (ocanseek && (password==0 || isdir))
+  if (ocanseek)
   { zfi.how = (ush)method;
-    if ((zfi.flg & 1) == 0) zfi.flg &= ~8; // clear the extended local header flag
+    zfi.flg &= ~8; // clear the extended local header flag
     zfi.lflg = zfi.flg;
     // rewrite the local header:
     if (!oseek(zfi.off-ooffset)) return ZR_SEEK;
