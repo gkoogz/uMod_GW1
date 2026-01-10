@@ -23,8 +23,15 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/tooltip.h>
 #include <cstring>
 
-static const wchar_t* DEFAULT_MODS_FILE = L"uMod_DefaultMods.txt";
-static const wchar_t* DEFAULT_MODS_STATE_FILE = L"uMod_DefaultModsEnabled.txt";
+static wxString GetDefaultModsPath(void)
+{
+  return GetReforgedAppDataPath("uMod_Reforged_DefaultMods.txt");
+}
+
+static wxString GetDefaultModsStatePath(void)
+{
+  return GetReforgedAppDataPath("uMod_Reforged_DefaultModsEnabled.txt");
+}
 
 
 uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame)
@@ -309,19 +316,20 @@ int uMod_GamePage::LoadDefaultModsList(void)
 {
   DefaultMods.Empty();
   wxFile file;
-  if (!file.Access( DEFAULT_MODS_FILE, wxFile::read))
+  wxString default_mods_path = GetDefaultModsPath();
+  if (!file.Access( default_mods_path, wxFile::read))
   {
     if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
     return 0;
   }
-  file.Open( DEFAULT_MODS_FILE, wxFile::read);
+  file.Open( default_mods_path, wxFile::read);
   if (!file.IsOpened()) return 0;
 
   unsigned len = file.Length();
   if (len == 0)
   {
     file.Close();
-    wxRemoveFile(DEFAULT_MODS_FILE);
+    wxRemoveFile(default_mods_path);
     if (LoadDefaultMods!=NULL) LoadDefaultMods->SetValue(false);
     return 0;
   }
@@ -332,7 +340,7 @@ int uMod_GamePage::LoadDefaultModsList(void)
 
   unsigned int result = file.Read( buffer, len);
   file.Close();
-  if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_FILE); return -1;}
+  if (result != len) {delete [] buffer; wxRemoveFile(default_mods_path); return -1;}
 
   wxString content;
   bool looks_utf16 = false;
@@ -380,7 +388,8 @@ int uMod_GamePage::SaveDefaultModsList(void)
   }
 
   wxFile file;
-  file.Open( DEFAULT_MODS_FILE, wxFile::write);
+  wxString default_mods_path = GetDefaultModsPath();
+  file.Open( default_mods_path, wxFile::write);
   if (!file.IsOpened()) return -1;
   wxString content;
   for (unsigned int i=0; i<DefaultMods.GetCount(); i++)
@@ -397,16 +406,17 @@ int uMod_GamePage::LoadDefaultModsState(void)
 {
   bool enabled = true;
   wxFile file;
-  if (file.Access( DEFAULT_MODS_STATE_FILE, wxFile::read))
+  wxString default_mods_state_path = GetDefaultModsStatePath();
+  if (file.Access( default_mods_state_path, wxFile::read))
   {
-    file.Open( DEFAULT_MODS_STATE_FILE, wxFile::read);
+    file.Open( default_mods_state_path, wxFile::read);
     if (file.IsOpened())
     {
       unsigned len = file.Length();
       if (len == 0)
       {
         file.Close();
-        wxRemoveFile(DEFAULT_MODS_STATE_FILE);
+        wxRemoveFile(default_mods_state_path);
         enabled = (DefaultMods.GetCount()>0);
       }
       else
@@ -417,7 +427,7 @@ int uMod_GamePage::LoadDefaultModsState(void)
 
         unsigned int result = file.Read( buffer, len);
         file.Close();
-        if (result != len) {delete [] buffer; wxRemoveFile(DEFAULT_MODS_STATE_FILE); return -1;}
+        if (result != len) {delete [] buffer; wxRemoveFile(default_mods_state_path); return -1;}
 
         bool looks_utf16 = false;
         if (len % 2 == 0)
@@ -462,7 +472,8 @@ int uMod_GamePage::SaveDefaultModsState(void)
 {
   if (LoadDefaultMods==NULL) return 0;
   wxFile file;
-  file.Open( DEFAULT_MODS_STATE_FILE, wxFile::write);
+  wxString default_mods_state_path = GetDefaultModsStatePath();
+  file.Open( default_mods_state_path, wxFile::write);
   if (!file.IsOpened()) return -1;
   wxString content = LoadDefaultMods->GetValue() ? "1" : "0";
   file.Write( content.wc_str(), content.Len()*2);

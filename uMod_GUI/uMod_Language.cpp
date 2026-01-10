@@ -41,8 +41,8 @@ int uMod_Language::GetLanguages(wxArrayString &lang)
   wxArrayString files;
   wxString dir = wxGetCwd();
   dir << "/languages";
-  wxDir::GetAllFiles( dir, &files, "uMod_LanguagePack_*.txt");
-  wxDir::GetAllFiles( dir, &files, "uMod_LanguagePackU_*.txt");
+  wxDir::GetAllFiles( dir, &files, "uMod_Reforged_LanguagePack_*.txt");
+  wxDir::GetAllFiles( dir, &files, "uMod_Reforged_LanguagePackU_*.txt");
   lang.Empty();
   lang.Alloc(files.GetCount()+1);
   lang.Add("English");
@@ -123,7 +123,7 @@ int uMod_Language::LoadLanguage(const wxString &name)
   if (name=="English") return 0;
 
   wxString file_name;
-  file_name << "languages/uMod_LanguagePack_" << name << ".txt";
+  file_name << "languages/uMod_Reforged_LanguagePack_" << name << ".txt";
 
   bool utf16=false;
   wxFile dat;
@@ -131,7 +131,7 @@ int uMod_Language::LoadLanguage(const wxString &name)
   {
     utf16=true;
     file_name.Empty();
-    file_name << "languages/uMod_LanguagePackU_" << name << ".txt";
+    file_name << "languages/uMod_Reforged_LanguagePackU_" << name << ".txt";
     if (!dat.Access(file_name, wxFile::read)){LastError << Error_FileOpen <<"\n" << file_name; return -1;}
   }
   dat.Open(file_name, wxFile::read);
@@ -271,8 +271,8 @@ int uMod_Language::LoadDefault(void)
   MenuAbout  = "About";
   MenuAcknowledgement = "Acknowledgement";
 
-  MenuStartGame = "Start game through uMod";
-  MenuStartGameCMD = "Start game through uMod (with command line)";
+  MenuStartGame = "Start game through uMod_Reforged";
+  MenuStartGameCMD = "Start game through uMod_Reforged (with command line)";
 
   MenuLoadTemplate = "Load template";
   MenuSaveTemplate = "Save template";
@@ -317,7 +317,7 @@ int uMod_Language::LoadDefault(void)
   CommandLine = "Set command line arguments.";
 
   ChooseGame = "Select a game binary.";
-  ExitGameAnyway = "Closing OpenTexMod while a game is running might lead to a crash of the game.\nExit anyway?";
+  ExitGameAnyway = "Closing uMod_Reforged while a game is running might lead to a crash of the game.\nExit anyway?";
   NoComment = "No comment.";
   Author = "Author: ";
 
@@ -327,7 +327,7 @@ int uMod_Language::LoadDefault(void)
   Error_D3DX9NotFound = "The D3DX9_43.dll (32bit) is not available on your system.\nPlease install the newest DirectX End-User Runtime Installer.";
   Error_DLLNotFound = "Could not load the dll.\nThe dll injection won't work.\nThis might happen if D3DX9_43.dll (32bit) is not installed on your system.\nPlease install the newest DirectX End-User Runtime Web Installer.";
   Error_FktNotFound = "Could not load function out of dll.\nThe dll injection won't work.";
-  Error_AlreadyRunning = "An other instance of OpenTexMod is already running.";
+  Error_AlreadyRunning = "Another instance of uMod_Reforged is already running.";
 
   Error_Send = "Could not send to game.";
   Error_KeyTwice = "You have assigned the same key twice.";

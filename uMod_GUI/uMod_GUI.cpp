@@ -21,8 +21,6 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
-#include <wx/filename.h>
-#include <wx/stdpaths.h>
 
 namespace {
 struct RelaunchInfo
@@ -32,6 +30,43 @@ struct RelaunchInfo
   wxString dll_path;
   HANDLE process;
 };
+
+static wxString GetInjectedGamesPath(void)
+{
+  return GetReforgedAppDataPath("uMod_Reforged_DI_Games.txt");
+}
+
+static wxString GetInjectedDllPath(void)
+{
+  return GetReforgedAppDataPath(uMod_d3d9_DI_dll);
+}
+
+static bool ExtractEmbeddedDll(const wxString &destination)
+{
+  HMODULE module = GetModuleHandle(NULL);
+  HRSRC resource = FindResource(module, MAKEINTRESOURCE(IDR_UMOD_REFORGED_DLL), RT_RCDATA);
+  if (resource == NULL) return false;
+  HGLOBAL resource_handle = LoadResource(module, resource);
+  if (resource_handle == NULL) return false;
+  DWORD resource_size = SizeofResource(module, resource);
+  if (resource_size == 0) return false;
+  void *resource_data = LockResource(resource_handle);
+  if (resource_data == NULL) return false;
+
+  wxFile file;
+  if (!file.Open(destination, wxFile::write)) return false;
+  file.Write(resource_data, resource_size);
+  file.Close();
+  return true;
+}
+
+static bool EnsureInjectedDllAvailable(wxString &dll_path)
+{
+  dll_path = GetInjectedDllPath();
+  if (wxFile::Access(dll_path, wxFile::read)) return true;
+  GetReforgedAppDataDir();
+  return ExtractEmbeddedDll(dll_path);
+}
 
 static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line, const wxString &dll_path, HANDLE &process)
 {
@@ -108,11 +143,12 @@ MyApp::~MyApp(void)
 
 bool MyApp::OnInit(void)
 {
+  SetAppName("uMod_Reforged");
   uMod_Settings set;
   set.Load();
 
   Language = new uMod_Language(set.Language);
-  CheckForSingleRun = CreateMutex( NULL, true, L"Global\\uMod_CheckForSingleRun");
+  CheckForSingleRun = CreateMutex( NULL, true, L"Global\\uMod_Reforged_CheckForSingleRun");
   if (ERROR_ALREADY_EXISTS == GetLastError())
   {
     wxMessageBox( Language->Error_AlreadyRunning, "ERROR", wxOK|wxICON_ERROR);
@@ -339,9 +375,14 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_line)
 {
   if (game_path.IsEmpty()) return -1;
-  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
-  wxString dll = exe_path.GetPath();
-  dll.Append( L"\\" uMod_d3d9_DI_dll);
+  wxString dll;
+  if (!EnsureInjectedDllAvailable(dll))
+  {
+    wxString message = Language->Error_FileOpen;
+    message << "\n" << GetInjectedDllPath();
+    wxMessageBox( message, "ERROR",  wxOK|wxICON_ERROR);
+    return -1;
+  }
 
   HANDLE process = INVALID_HANDLE_VALUE;
   if (!StartProcessWithInject(game_path, command_line, dll, process))
@@ -380,17 +421,17 @@ int uMod_Frame::DeactivateGamesControl(void)
   return 0;
 }
 
-#define DI_FILE "uMod_DI_Games.txt"
 int uMod_Frame::GetInjectedGames( wxArrayString &games, wxArrayString &cmd)
 {
   wxFile file;
 
-  if (!file.Access( DI_FILE, wxFile::read)) {return 0;}
-  file.Open( DI_FILE, wxFile::read);
+  wxString injected_games_path = GetInjectedGamesPath();
+  if (!file.Access( injected_games_path, wxFile::read)) {return 0;}
+  file.Open( injected_games_path, wxFile::read);
   if (!file.IsOpened()) {return -1;}
 
   unsigned len = file.Length();
-  if (len == 0 || (len % 2) != 0) {file.Close(); wxRemoveFile(DI_FILE); return 0;}
+  if (len == 0 || (len % 2) != 0) {file.Close(); wxRemoveFile(injected_games_path); return 0;}
 
   unsigned char* buffer;
   try {buffer = new unsigned char [len+2];}
@@ -399,7 +440,7 @@ int uMod_Frame::GetInjectedGames( wxArrayString &games, wxArrayString &cmd)
   unsigned int result = file.Read( buffer, len);
   file.Close();
 
-  if (result != len) {delete [] buffer; wxRemoveFile(DI_FILE); return -1;}
+  if (result != len) {delete [] buffer; wxRemoveFile(injected_games_path); return -1;}
 
   wchar_t *buff = (wchar_t*)buffer;
   len/=2;
@@ -432,8 +473,9 @@ int uMod_Frame::SetInjectedGames( wxArrayString &games, wxArrayString &cmd)
 {
   wxFile file;
 
-  file.Open( DI_FILE, wxFile::write);
-  if (!file.IsOpened()) {LastError << Language->Error_FileOpen << "\n" << DI_FILE ; return -1;}
+  wxString injected_games_path = GetInjectedGamesPath();
+  file.Open( injected_games_path, wxFile::write);
+  if (!file.IsOpened()) {LastError << Language->Error_FileOpen << "\n" << injected_games_path ; return -1;}
   wxString content;
 
   int num = games.GetCount();

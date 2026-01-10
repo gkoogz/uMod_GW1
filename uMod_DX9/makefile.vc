@@ -6,7 +6,7 @@ precompiler_flag =  /D "DIRECT_INJECTION"
 
 def_file = /DEF:"uMod_DX9_dll_DIRECT_INJECTION.def"
 obj_suff = DI.obj
-dll = uMod_d3d9_DI.dll
+dll = uMod_Reforged_d3d9_DI.dll
 
 
 CXX = cl

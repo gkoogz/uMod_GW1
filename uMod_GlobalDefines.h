@@ -39,11 +39,11 @@ typedef struct
 } PipeStruct;
 
 
-#define uMod_APP_DIR L"uMod"
-#define uMod_VERSION L"uMod V 1.0"
+#define uMod_APP_DIR L"uMod_Reforged"
+#define uMod_VERSION L"uMod_Reforged V 1.0"
 
-#define PIPE_uMod2Game L"\\\\.\\pipe\\uMod2Game"
-#define PIPE_Game2uMod L"\\\\.\\pipe\\Game2uMod"
+#define PIPE_uMod2Game L"\\\\.\\pipe\\uMod_Reforged2Game"
+#define PIPE_Game2uMod L"\\\\.\\pipe\\Game2uMod_Reforged"
 
 #define CONTROL_ADD_TEXTURE 1
 #define CONTROL_FORCE_RELOAD_TEXTURE 2
