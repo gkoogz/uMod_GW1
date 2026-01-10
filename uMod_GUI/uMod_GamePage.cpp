@@ -639,7 +639,7 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     }
     wxFileName file_name(files[i]);
     wxString entry_name = file_name.GetFullName();
-    def << wxString::Format("%08X|%s\n", hash, entry_name);
+    def << wxString::Format("%08X|%s\r\n", hash, entry_name);
     if (ZipAdd(zip_handle, entry_name.wc_str(), files[i].wc_str()) != ZR_OK)
     {
       CloseZip(zip_handle);
@@ -649,7 +649,7 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     }
   }
 
-  wxCharBuffer def_buffer = def.ToUTF8();
+  wxCharBuffer def_buffer = def.mb_str();
   if (ZipAdd(zip_handle, L"texmod.def", (void*)def_buffer.data(), def_buffer.length()) != ZR_OK)
   {
     CloseZip(zip_handle);
@@ -666,7 +666,7 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
       if (!comment.IsEmpty()) comment << "\n";
       comment << Language->Author << author;
     }
-    wxCharBuffer comment_buffer = comment.ToUTF8();
+    wxCharBuffer comment_buffer = comment.mb_str();
     ZipAdd(zip_handle, L"Comment.txt", (void*)comment_buffer.data(), comment_buffer.length());
   }
 
@@ -710,7 +710,7 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     return -1;
   }
 
-  wxCharBuffer author_buffer = author.ToUTF8();
+  wxCharBuffer author_buffer = author.mb_str();
   unsigned long author_len = author_buffer.length();
   unsigned long total_len = zip_len + 1 + author_len;
   char *tpf_buffer = NULL;

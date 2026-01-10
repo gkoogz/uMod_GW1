@@ -2563,7 +2563,7 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   TCHAR *d=dstzn; while (*d!=0) {if (*d=='\\') *d='/'; d++;}
   bool isdir = (flags==ZIP_FOLDER);
   bool needs_trailing_slash = (isdir && dstzn[_tcslen(dstzn)-1]!='/');
-  int method=DEFLATE; if (isdir || HasZipSuffix(dstzn)) method=STORE;
+  int method=STORE;
 
   // now open whatever was our input source:
   ZRESULT openres;
@@ -2581,7 +2581,7 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   TZipFileInfo zfi; zfi.nxt=NULL;
   strcpy(zfi.name,"");
 #ifdef UNICODE
-  WideCharToMultiByte(CP_UTF8,0,dstzn,-1,zfi.iname,MAX_PATH,0,0);
+  WideCharToMultiByte(CP_ACP,0,dstzn,-1,zfi.iname,MAX_PATH,0,0);
 #else
   strcpy(zfi.iname,dstzn);
 #endif
@@ -2599,39 +2599,19 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   zfi.tim = timestamp;
   // Even though we write the header now, it will have to be rewritten, since we don't know compressed size or crc.
   zfi.crc = 0;            // to be updated later
-  zfi.flg = 8;            // 8 means 'there is an extra header'. Assume for the moment that we need it.
-  if (password!=0 && !isdir) zfi.flg=9;  // and 1 means 'password-encrypted'
+  zfi.flg = 0;
+  if (password!=0 && !isdir) zfi.flg=1;  // 1 means 'password-encrypted'
   zfi.lflg = zfi.flg;     // to be updated later
   zfi.how = (ush)method;  // to be updated later
-  zfi.siz = (ulg)(method==STORE && isize>=0 ? isize+passex : 0); // to be updated later
-  zfi.len = (ulg)(isize);  // to be updated later
+  zfi.siz = (ulg)(isize>=0 ? isize+passex : 0);
+  zfi.len = (ulg)(isize);
   zfi.dsk = 0;
   zfi.atx = attr;
   zfi.off = writ+ooffset;         // offset within file of the start of this local record
   // stuff the 'times' structure into zfi.extra
 
-  // nb. apparently there's a problem with PocketPC CE(zip)->CE(unzip) fails. And removing the following block fixes it up.
-  char xloc[EB_L_UT_SIZE]; zfi.extra=xloc;  zfi.ext=EB_L_UT_SIZE;
-  char xcen[EB_C_UT_SIZE]; zfi.cextra=xcen; zfi.cext=EB_C_UT_SIZE;
-  xloc[0]  = 'U';
-  xloc[1]  = 'T';
-  xloc[2]  = EB_UT_LEN(3);       // length of data part of e.f.
-  xloc[3]  = 0;
-  xloc[4]  = EB_UT_FL_MTIME | EB_UT_FL_ATIME | EB_UT_FL_CTIME;
-  xloc[5]  = (char)(times.mtime);
-  xloc[6]  = (char)(times.mtime >> 8);
-  xloc[7]  = (char)(times.mtime >> 16);
-  xloc[8]  = (char)(times.mtime >> 24);
-  xloc[9]  = (char)(times.atime);
-  xloc[10] = (char)(times.atime >> 8);
-  xloc[11] = (char)(times.atime >> 16);
-  xloc[12] = (char)(times.atime >> 24);
-  xloc[13] = (char)(times.ctime);
-  xloc[14] = (char)(times.ctime >> 8);
-  xloc[15] = (char)(times.ctime >> 16);
-  xloc[16] = (char)(times.ctime >> 24);
-  memcpy(zfi.cextra,zfi.extra,EB_C_UT_SIZE);
-  zfi.cextra[EB_LEN] = EB_UT_LEN(1);
+  zfi.extra=NULL; zfi.ext=0;
+  zfi.cextra=NULL; zfi.cext=0;
 
 
   // (1) Start by writing the local header:
@@ -2655,8 +2635,7 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   //(2) Write deflated/stored file to zip file
   ZRESULT writeres=ZR_OK;
   encwriting = (password!=0 && !isdir);  // an object member variable to say whether we write to disk encrypted
-  if (!isdir && method==DEFLATE) writeres=ideflate(&zfi);
-  else if (!isdir && method==STORE) writeres=istore();
+  if (!isdir && method==STORE) writeres=istore();
   else if (isdir) csize=0;
   encwriting = false;
   iclose();
@@ -2669,9 +2648,8 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   zfi.crc = crc;
   zfi.siz = csize+passex;
   zfi.len = isize;
-  if (ocanseek && (password==0 || isdir))
+  if (ocanseek)
   { zfi.how = (ush)method;
-    if ((zfi.flg & 1) == 0) zfi.flg &= ~8; // clear the extended local header flag
     zfi.lflg = zfi.flg;
     // rewrite the local header:
     if (!oseek(zfi.off-ooffset)) return ZR_SEEK;
@@ -2680,8 +2658,7 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   }
   else
   { // (4) ... or put an updated header at the end
-    if (zfi.how != (ush) method) return ZR_NOCHANGE;
-    if (method==STORE && !first_header_has_size_right) return ZR_NOCHANGE;
+    if (!first_header_has_size_right) return ZR_NOCHANGE;
     if ((r = putextended(&zfi, swrite,this)) != ZE_OK) return ZR_WRITE;
     writ += 16L;
     zfi.flg = zfi.lflg; // if flg modified by inflate, for the central index
@@ -2689,7 +2666,13 @@ ZRESULT TZip::Add(const TCHAR *odstzn, void *src,unsigned int len, DWORD flags)
   if (oerr!=ZR_OK) return oerr;
 
   // Keep a copy of the zipfileinfo, for our end-of-zip directory
-  char *cextra = new char[zfi.cext]; memcpy(cextra,zfi.cextra,zfi.cext); zfi.cextra=cextra;
+  char *cextra = NULL;
+  if (zfi.cext>0)
+  {
+    cextra = new char[zfi.cext];
+    memcpy(cextra,zfi.cextra,zfi.cext);
+  }
+  zfi.cextra=cextra;
   TZipFileInfo *pzfi = new TZipFileInfo; memcpy(pzfi,&zfi,sizeof(zfi));
   if (zfis==NULL) zfis=pzfi;
   else {TZipFileInfo *z=zfis; while (z->nxt!=NULL) z=z->nxt; z->nxt=pzfi;}
@@ -2827,4 +2810,3 @@ bool IsZipHandleZ(HZIP hz)
   TZipHandleData *han = (TZipHandleData*)hz;
   return (han->flag==2);
 }
-
