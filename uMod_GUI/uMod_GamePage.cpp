@@ -710,23 +710,8 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     return -1;
   }
 
-  wxCharBuffer author_buffer = author.ToUTF8();
-  unsigned long author_len = author_buffer.length();
-  unsigned long total_len = zip_len + 1 + author_len;
-  char *tpf_buffer = NULL;
-  try {tpf_buffer = new char[total_len];}
-  catch (...) {tpf_buffer = NULL;}
-  if (tpf_buffer==NULL)
-  {
-    delete [] zip_buffer;
-    LastError = Language->Error_Memory;
-    return -1;
-  }
-
-  memcpy(tpf_buffer, zip_buffer, zip_len);
-  tpf_buffer[zip_len] = 0;
-  if (author_len>0) memcpy(tpf_buffer + zip_len + 1, author_buffer.data(), author_len);
-  delete [] zip_buffer;
+  unsigned long total_len = zip_len;
+  char *tpf_buffer = zip_buffer;
 
   unsigned int *buff = (unsigned int*) tpf_buffer;
   unsigned int TPF_XOR = 0x3FA43FA4u;
