@@ -212,8 +212,52 @@ int uMod_File::GetCommentTpf( wxString &tool_tip)
   if (int ret = ReadFile()) return ret;
 
   UnXOR();
+  const char pw[] = {0x73, 0x2A, 0x63, 0x7D, 0x5F, 0x0A, 0xA6, 0xBD,
+     0x7D, 0x65, 0x7E, 0x67, 0x61, 0x2A, 0x7F, 0x7F,
+     0x74, 0x61, 0x67, 0x5B, 0x60, 0x70, 0x45, 0x74,
+     0x5C, 0x22, 0x74, 0x5D, 0x6E, 0x6A, 0x73, 0x41,
+     0x77, 0x6E, 0x46, 0x47, 0x77, 0x49, 0x0C, 0x4B,
+     0x46, 0x6F, '\0'};
+
+  HZIP ZIP_Handle = OpenZip( FileInMemory, FileLen, pw);
+  if (ZIP_Handle!=NULL)
+  {
+    ZIPENTRY ze;
+    int index;
+    FindZipItem( ZIP_Handle, L"Comment.txt", false, &index, &ze);
+    if (index>=0) //if Comment.txt is present in the zip file
+    {
+      char* comment;
+      int len = ze.unc_size;
+      try {comment=new char[len+1];}
+      catch(...) {CloseZip(ZIP_Handle); tool_tip = Language->NoComment; LastError << Language->Error_Memory; return -1;}
+      ZRESULT zr = UnzipItem( ZIP_Handle, index, comment, len);
+      if (zr!=ZR_OK && zr!=ZR_MORE)
+      {
+        delete [] comment;
+        CloseZip(ZIP_Handle);
+        tool_tip = Language->NoComment;
+        LastError << Language->Error_Unzip <<"\nZIP:" << L"Comment.txt";
+        return -1;
+      }
+      comment[len]=0;
+      tool_tip = comment;
+      delete [] comment;
+      CloseZip(ZIP_Handle);
+      return 0;
+    }
+    CloseZip(ZIP_Handle);
+  }
+
   tool_tip = &FileInMemory[FileLen];
-  tool_tip.Prepend( Language->Author);
+  if (tool_tip.IsEmpty())
+  {
+    tool_tip = Language->NoComment;
+  }
+  else
+  {
+    tool_tip.Prepend( Language->Author);
+  }
   return 0;
 }
 
