@@ -316,7 +316,34 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
   {
     if (wxMessageBox(Language->ExitGameAnyway, "ERROR", wxYES_NO|wxICON_ERROR)!=wxYES) {event.Veto(); return;}
   }
-  event.Skip();
+  if (Clients!=NULL)
+  {
+    for (int i=0; i<NumberOfGames; i++)
+    {
+      if (Clients[i]==NULL) continue;
+      if (Clients[i]->Pipe.In != INVALID_HANDLE_VALUE)
+      {
+        CloseHandle(Clients[i]->Pipe.In);
+        Clients[i]->Pipe.In = INVALID_HANDLE_VALUE;
+      }
+      if (Clients[i]->Pipe.Out != INVALID_HANDLE_VALUE)
+      {
+        CloseHandle(Clients[i]->Pipe.Out);
+        Clients[i]->Pipe.Out = INVALID_HANDLE_VALUE;
+      }
+      Clients[i]->Wait();
+      delete Clients[i];
+      Clients[i] = NULL;
+    }
+    NumberOfGames = 0;
+  }
+  if (Server!=NULL)
+  {
+    KillServer();
+    Server->Wait();
+    delete Server;
+    Server = NULL;
+  }
   Destroy();
 }
 
