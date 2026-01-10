@@ -228,6 +228,7 @@ bool uMod_Frame::IsGameActive(void) const
 
 int uMod_Frame::KillServer(void)
 {
+  if (!WaitNamedPipe(PIPE_Game2uMod, 200)) return -1;
   HANDLE pipe = CreateFileW( PIPE_Game2uMod,// pipe name
                  GENERIC_WRITE,
                  0,              // no sharing
@@ -331,16 +332,14 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
         CloseHandle(Clients[i]->Pipe.Out);
         Clients[i]->Pipe.Out = INVALID_HANDLE_VALUE;
       }
-      Clients[i]->Wait();
-      delete Clients[i];
+      Clients[i]->Delete();
       Clients[i] = NULL;
     }
     NumberOfGames = 0;
   }
   if (Server!=NULL)
   {
-    KillServer();
-    Server->Wait();
+    Server->Delete();
     delete Server;
     Server = NULL;
   }
