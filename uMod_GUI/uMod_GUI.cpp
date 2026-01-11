@@ -42,7 +42,21 @@ struct RelaunchInfo
   HANDLE process;
 };
 
-static DWORD FindChildProcessId(DWORD parent_pid, const wxString &expected_exe)
+static bool GetProcessCreationTime(HANDLE process, ULONGLONG &time)
+{
+  FILETIME create_time = {0};
+  FILETIME exit_time = {0};
+  FILETIME kernel_time = {0};
+  FILETIME user_time = {0};
+  if (!GetProcessTimes(process, &create_time, &exit_time, &kernel_time, &user_time)) return false;
+  ULARGE_INTEGER value;
+  value.LowPart = create_time.dwLowDateTime;
+  value.HighPart = create_time.dwHighDateTime;
+  time = value.QuadPart;
+  return true;
+}
+
+static DWORD FindProcessIdByNameAfter(const wxString &expected_exe, ULONGLONG min_creation_time, DWORD exclude_pid)
 {
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
   if (snapshot == INVALID_HANDLE_VALUE) return 0;
@@ -54,12 +68,18 @@ static DWORD FindChildProcessId(DWORD parent_pid, const wxString &expected_exe)
   {
     do
     {
-      if (entry.th32ParentProcessID != parent_pid) continue;
+      if (entry.th32ProcessID == exclude_pid) continue;
       if (!expected_exe.IsEmpty())
       {
         wxString exe_name(entry.szExeFile);
         if (!exe_name.IsSameAs(expected_exe, false)) continue;
       }
+      HANDLE proc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, entry.th32ProcessID);
+      if (proc == NULL) continue;
+      ULONGLONG creation_time = 0;
+      bool valid = GetProcessCreationTime(proc, creation_time);
+      CloseHandle(proc);
+      if (!valid || creation_time < min_creation_time) continue;
       child_pid = entry.th32ProcessID;
       break;
     } while (Process32Next(snapshot, &entry));
@@ -134,6 +154,8 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   if (info == NULL) return 0;
 
   DWORD parent_pid = GetProcessId(info->process);
+  ULONGLONG parent_creation = 0;
+  if (!GetProcessCreationTime(info->process, parent_creation)) parent_creation = 0;
   wxString expected_exe = wxFileName(info->exe_path).GetFullName();
   const DWORD timeout_ms = 30000;
   const DWORD interval_ms = 200;
@@ -141,7 +163,7 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   bool parent_exited = false;
   for (DWORD elapsed = 0; elapsed < timeout_ms; elapsed += interval_ms)
   {
-    DWORD child_pid = FindChildProcessId(parent_pid, expected_exe);
+    DWORD child_pid = FindProcessIdByNameAfter(expected_exe, parent_creation, parent_pid);
     if (child_pid != 0)
     {
       const DWORD access = PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION |
