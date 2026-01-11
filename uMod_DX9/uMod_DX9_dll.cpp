@@ -60,6 +60,12 @@ FILE*                 gl_File = NULL;
 
 
 void Nothing(void) {(void)NULL;}
+DWORD WINAPI InitThread( LPVOID lpParam )
+{
+  InitInstance(reinterpret_cast<HINSTANCE>(lpParam));
+  return 0;
+}
+
 /*
  * dll entry routine, here we initialize or clean up
  */
@@ -71,7 +77,9 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	{
 	case DLL_PROCESS_ATTACH:
 	{
-	  InitInstance(hModule);
+	  DisableThreadLibraryCalls(hModule);
+	  HANDLE thread = CreateThread(NULL, 0, InitThread, hModule, 0, NULL);
+	  if (thread != NULL) CloseHandle(thread);
 		break;
 	}
 	case DLL_PROCESS_DETACH:
@@ -95,9 +103,6 @@ DWORD WINAPI ServerThread( LPVOID lpParam )
 
 void InitInstance(HINSTANCE hModule)
 {
-
-  DisableThreadLibraryCalls( hModule ); //reduce overhead
-
   gl_hThisInstance = (HINSTANCE)  hModule;
 
   wchar_t game[MAX_PATH];
