@@ -22,7 +22,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/file.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
-#include <wx/utils.h>
+#include <windows.h>
 
 static wxString GetLogPath(void)
 {
@@ -33,8 +33,16 @@ static wxString GetLogPath(void)
 wxString FormatWindowsError(unsigned long error_code)
 {
   if (error_code == 0) return "Unknown error.";
-  wxString message = wxSysErrorMsg(error_code);
-  if (message.IsEmpty()) return "Unknown error.";
+  wchar_t *buffer = NULL;
+  DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+  DWORD len = FormatMessageW(flags, NULL, static_cast<DWORD>(error_code), 0, (LPWSTR)&buffer, 0, NULL);
+  wxString message;
+  if (len > 0 && buffer != NULL)
+  {
+    message = buffer;
+    LocalFree(buffer);
+  }
+  if (message.IsEmpty()) message = "Unknown error.";
   message.Trim(true);
   message.Trim(false);
   return message;
