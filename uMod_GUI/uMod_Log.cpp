@@ -19,6 +19,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "uMod_Log.h"
 
 #include <wx/datetime.h>
+#include <wx/file.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
 
