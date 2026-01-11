@@ -21,6 +21,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <tlhelp32.h>
 
 namespace {
 struct RelaunchInfo
@@ -91,6 +92,41 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
   return true;
 }
 
+static bool InjectIntoExistingProcess(const wxString &game_path, const wxString &dll_path, HANDLE &process)
+{
+  wxString exe_name = game_path.AfterLast('\\');
+  if (exe_name.IsEmpty()) return false;
+
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) return false;
+
+  PROCESSENTRY32W entry;
+  entry.dwSize = sizeof(entry);
+  bool injected = false;
+  if (Process32FirstW(snapshot, &entry))
+  {
+    do
+    {
+      if (exe_name.CmpNoCase(entry.szExeFile) == 0)
+      {
+        HANDLE proc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION |
+                                  PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ,
+                                  FALSE, entry.th32ProcessID);
+        if (proc != NULL)
+        {
+          Inject(proc, dll_path.wc_str(), "Nothing");
+          process = proc;
+          injected = true;
+          break;
+        }
+      }
+    } while (Process32NextW(snapshot, &entry));
+  }
+
+  CloseHandle(snapshot);
+  return injected;
+}
+
 static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
 {
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
@@ -103,9 +139,21 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   if (wait == WAIT_OBJECT_0)
   {
     HANDLE proc = INVALID_HANDLE_VALUE;
-    if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
+    const int attempts = 40;
+    for (int i = 0; i < attempts; ++i)
+    {
+      if (InjectIntoExistingProcess(info->exe_path, info->dll_path, proc)) break;
+      Sleep(250);
+    }
+
+    if (proc == INVALID_HANDLE_VALUE &&
+        StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
     {
       if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
+    }
+    else if (proc != INVALID_HANDLE_VALUE)
+    {
+      CloseHandle(proc);
     }
   }
 
