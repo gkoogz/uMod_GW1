@@ -60,6 +60,7 @@ public:
 
 private:
   void OnButtonLaunch(wxCommandEvent& WXUNUSED(event));
+  void OnButtonReportPipeState(wxCommandEvent& WXUNUSED(event));
   void OnButtonLocateExe(wxCommandEvent& WXUNUSED(event));
   void UpdateLaunchState(void);
   int PersistLauncherSettings(const wxString &exe_path, const wxString &command_line);
@@ -108,6 +109,7 @@ private:
   wxScrolledWindow *ModMakerPanel;
 
   wxButton *LaunchButton;
+  wxButton *ReportPipeStateButton;
   wxTextCtrl *CommandLine;
   wxButton *LocateExeButton;
   wxTextCtrl *ExePath;

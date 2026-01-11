@@ -73,6 +73,12 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherSizer->Add( launchRow, 0, wxEXPAND, 0);
   LauncherSizer->AddSpacer(10);
 
+  wxBoxSizer *pipeRow = new wxBoxSizer(wxHORIZONTAL);
+  ReportPipeStateButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonReportPipeState, wxDefaultPosition, launcher_button_size);
+  pipeRow->Add( (wxWindow*) ReportPipeStateButton, 0, wxRIGHT, 10);
+  LauncherSizer->Add( pipeRow, 0, wxEXPAND, 0);
+  LauncherSizer->AddSpacer(10);
+
   wxBoxSizer *exeRow = new wxBoxSizer(wxHORIZONTAL);
   LocateExeButton = new wxButton( LauncherPanel, wxID_ANY, Language->ButtonLocateExe, wxDefaultPosition, launcher_button_size);
   ExePath = new wxTextCtrl( LauncherPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
@@ -207,6 +213,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
 
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLaunch, this, LaunchButton->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
+  Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonReportPipeState, this, ReportPipeStateButton->GetId());
   Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSavePackage, this, SavePackageButton->GetId());
   UpdateLaunchState();
@@ -282,7 +289,17 @@ void uMod_GamePage::OnButtonLaunch(wxCommandEvent& WXUNUSED(event))
   if (exe_path.IsEmpty()) return;
   wxString command_line = CommandLine->GetValue();
   PersistLauncherSettings( exe_path, command_line);
+  LogMessage(wxString::Format(L"OnButtonLaunch: exe_path=%ls command_line=%ls", exe_path.wc_str(), command_line.wc_str()));
   MainFrame->LaunchGame( exe_path, command_line);
+}
+
+void uMod_GamePage::OnButtonReportPipeState(wxCommandEvent& WXUNUSED(event))
+{
+  if (MainFrame==NULL) return;
+  wxString state = MainFrame->GetPipeStateDescription();
+  LogMessage(L"OnButtonReportPipeState: requested pipe state");
+  LogMessage(state);
+  wxMessageBox(state, "Pipe State", wxOK|wxICON_INFORMATION);
 }
 
 void uMod_GamePage::OnButtonLocateExe(wxCommandEvent& WXUNUSED(event))
@@ -291,6 +308,7 @@ void uMod_GamePage::OnButtonLocateExe(wxCommandEvent& WXUNUSED(event))
   wxString file_name = wxFileSelector( Language->ChooseGame, "", "", "exe",  "binary (*.exe)|*.exe", wxFD_OPEN | wxFD_FILE_MUST_EXIST, this);
   if ( !file_name.empty() )
   {
+    LogMessage(wxString::Format(L"OnButtonLocateExe: selected %ls", file_name.wc_str()));
     SetExePath( file_name);
     PersistLauncherSettings( file_name, CommandLine->GetValue());
   }
@@ -1120,6 +1138,7 @@ int uMod_GamePage::UpdateLanguage(void)
   Notebook->SetPageText( 1, Language->TabModMaker);
   LaunchButton->SetLabel( Language->ButtonLaunch);
   LocateExeButton->SetLabel( Language->ButtonLocateExe);
+  ReportPipeStateButton->SetLabel( Language->ButtonReportPipeState);
   CommandLine->SetHint( Language->CommandLineHint);
   OpenButton->SetLabel( Language->ButtonOpen);
   OpenButtonHint->SetLabel( Language->SelectModsHint);

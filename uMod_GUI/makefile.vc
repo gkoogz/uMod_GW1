@@ -46,6 +46,7 @@ MINIMAL_OBJECTS = \
 	$(OBJS)\uMod_Settings.obj \
 	$(OBJS)\uMod_AddTexture.obj \
 	$(OBJS)\uMod_Language.obj \
+	$(OBJS)\uMod_Logging.obj \
 	$(OBJS)\uMod_XLocaleShim.obj
 MINIMAL_RESOURCES =  \
 	$(OBJS)\uMod_GUI.res
@@ -404,6 +405,9 @@ $(OBJS)\uMod_AddTexture.obj: .\uMod_AddTexture.cpp
 
 $(OBJS)\uMod_Language.obj: .\uMod_Language.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_Language.cpp
+
+$(OBJS)\uMod_Logging.obj: .\uMod_Logging.cpp
+  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_Logging.cpp
 
 $(OBJS)\uMod_XLocaleShim.obj: .\uMod_XLocaleShim.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_XLocaleShim.cpp

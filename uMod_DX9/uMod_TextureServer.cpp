@@ -701,7 +701,7 @@ int uMod_TextureServer::MainLoop(void) // run as a separated thread
 
 int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
 {
-  Message("OpenPipe: Out\n")
+  Message("OpenPipe: Out\n");
   // open first outgoing pipe !!
   Pipe.Out = CreateFileW(PIPE_Game2uMod, // pipe name
       GENERIC_WRITE, // write access
@@ -712,7 +712,11 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
       NULL); // no template file
 
   // Exit if an error other than ERROR_PIPE_BUSY occurs.
-  if (Pipe.Out == INVALID_HANDLE_VALUE) return (RETURN_PIPE_NOT_OPENED);
+  if (Pipe.Out == INVALID_HANDLE_VALUE)
+  {
+    Message("OpenPipe: Pipe.Out invalid (err=%lu)\n", GetLastError());
+    return (RETURN_PIPE_NOT_OPENED);
+  }
 
   unsigned int len = 0u;
   while (game[len]) len++;
@@ -733,6 +737,7 @@ int uMod_TextureServer::OpenPipe(wchar_t *game) // called from InitInstance()
 
   if (Pipe.In == INVALID_HANDLE_VALUE)
   {
+    Message("OpenPipe: Pipe.In invalid (err=%lu)\n", GetLastError());
     CloseHandle(Pipe.In);
     Pipe.In = INVALID_HANDLE_VALUE;
     return (RETURN_PIPE_NOT_OPENED);

@@ -42,6 +42,7 @@ void* uMod_Server::Entry(void)
 
   while(1)
   {
+    LogMessage(L"uMod_Server: creating named pipes");
 /*
     Beep(300,100);
     Beep(600,100);
@@ -81,6 +82,7 @@ void* uMod_Server::Entry(void)
     */
     if (fConnected)
     {
+      LogMessage(L"uMod_Server: pipe_in connected");
       unsigned long num = 0;
       //read the name of the game
       bool fSuccess = ReadFile(
@@ -97,9 +99,11 @@ void* uMod_Server::Entry(void)
           buffer[num]=0;
           buffer[num-1]=0;
           wxString name = (wchar_t*) buffer;
+          LogMessage(wxString::Format(L"uMod_Server: received game name=%ls", name.wc_str()));
 
           if (name==abort) // kill this server thread
           {
+            LogMessage(L"uMod_Server: abort received");
             //Beep(1200,300);
             CloseHandle(pipe_in);
             return NULL;
@@ -110,6 +114,7 @@ void* uMod_Server::Entry(void)
             true : (GetLastError() == ERROR_PIPE_CONNECTED);
           if (fConnected)
           {
+            LogMessage(L"uMod_Server: pipe_out connected");
             uMod_Event event( uMod_EVENT_TYPE, ID_Add_Game);
             event.SetName(name);
             event.SetPipeIn(pipe_in);
@@ -118,6 +123,7 @@ void* uMod_Server::Entry(void)
           }
           else
           {
+            LogMessage(L"uMod_Server: pipe_out connect failed");
             CloseHandle(pipe_in);
             CloseHandle(pipe_out);
             return NULL;
@@ -125,8 +131,11 @@ void* uMod_Server::Entry(void)
         }
       }
    }
-   else CloseHandle(pipe_in);
+   else
+   {
+     LogMessage(L"uMod_Server: pipe_in connect failed");
+     CloseHandle(pipe_in);
+   }
   }
   return NULL;
 }
-

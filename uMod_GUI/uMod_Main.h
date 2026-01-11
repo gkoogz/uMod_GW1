@@ -115,6 +115,7 @@ enum
 #include "uMod_Server.h"
 #include "uMod_GamePage.h"
 #include "uMod_DirectInjection.h"
+#include "uMod_Logging.h"
 #include "uMod_GUI.h"
 
 

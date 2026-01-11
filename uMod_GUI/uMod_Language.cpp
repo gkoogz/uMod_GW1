@@ -202,6 +202,7 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, ButtonSavePackage)
     CheckEntry( command, msg, ButtonLaunch)
     CheckEntry( command, msg, ButtonLocateExe)
+    CheckEntry( command, msg, ButtonReportPipeState)
     CheckEntry( command, msg, SelectModsHint)
     CheckEntry( command, msg, LoadDefaultMods)
     CheckEntry( command, msg, ChooseFile)
@@ -290,6 +291,7 @@ int uMod_Language::LoadDefault(void)
   ButtonSavePackage = "Save Package";
   ButtonLaunch = "Launch Guild Wars";
   ButtonLocateExe = "Locate Guild Wars Executable";
+  ButtonReportPipeState = "Report Pipe State";
   SelectModsHint = "Mods will be injected when the game launches.";
   LoadDefaultMods = "Load these mods by default.";
 

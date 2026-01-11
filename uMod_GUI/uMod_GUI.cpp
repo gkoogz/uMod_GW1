@@ -43,29 +43,58 @@ static wxString GetInjectedDllPath(void)
 
 static bool ExtractEmbeddedDll(const wxString &destination)
 {
+  LogMessage(wxString::Format(L"ExtractEmbeddedDll: destination=%ls", destination.wc_str()));
   HMODULE module = GetModuleHandle(NULL);
   HRSRC resource = FindResource(module, MAKEINTRESOURCE(IDR_UMOD_REFORGED_DLL), RT_RCDATA);
-  if (resource == NULL) return false;
+  if (resource == NULL)
+  {
+    LogMessage(L"ExtractEmbeddedDll: resource not found");
+    return false;
+  }
   HGLOBAL resource_handle = LoadResource(module, resource);
-  if (resource_handle == NULL) return false;
+  if (resource_handle == NULL)
+  {
+    LogMessage(L"ExtractEmbeddedDll: LoadResource failed");
+    return false;
+  }
   DWORD resource_size = SizeofResource(module, resource);
-  if (resource_size == 0) return false;
+  if (resource_size == 0)
+  {
+    LogMessage(L"ExtractEmbeddedDll: resource size is 0");
+    return false;
+  }
   void *resource_data = LockResource(resource_handle);
-  if (resource_data == NULL) return false;
+  if (resource_data == NULL)
+  {
+    LogMessage(L"ExtractEmbeddedDll: LockResource failed");
+    return false;
+  }
 
   wxFile file;
-  if (!file.Open(destination, wxFile::write)) return false;
+  if (!file.Open(destination, wxFile::write))
+  {
+    LogMessage(L"ExtractEmbeddedDll: failed to open destination for write");
+    return false;
+  }
   file.Write(resource_data, resource_size);
   file.Close();
+  LogMessage(wxString::Format(L"ExtractEmbeddedDll: wrote %lu bytes", resource_size));
   return true;
 }
 
 static bool EnsureInjectedDllAvailable(wxString &dll_path)
 {
   dll_path = GetInjectedDllPath();
-  if (wxFile::Access(dll_path, wxFile::read)) return true;
+  LogMessage(wxString::Format(L"EnsureInjectedDllAvailable: checking %ls", dll_path.wc_str()));
+  if (wxFile::Access(dll_path, wxFile::read))
+  {
+    LogMessage(L"EnsureInjectedDllAvailable: existing DLL found");
+    return true;
+  }
   GetReforgedAppDataDir();
-  return ExtractEmbeddedDll(dll_path);
+  bool extracted = ExtractEmbeddedDll(dll_path);
+  LogMessage(wxString::Format(L"EnsureInjectedDllAvailable: extracted=%d", extracted));
+  return extracted;
 }
 
 static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line, const wxString &dll_path, HANDLE &process)
@@ -80,12 +109,20 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
   if (!command_line.IsEmpty()) exe << "\"" << game_path << "\" " << command_line;
   else exe = game_path;
 
+  LogMessage(wxString::Format(L"StartProcessWithInject: game=%ls cmd=%ls dll=%ls", game_path.wc_str(), command_line.wc_str(), dll_path.wc_str()));
   bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
                               CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
-  if (!result) return false;
+  if (!result)
+  {
+    LogMessage(wxString::Format(L"StartProcessWithInject: CreateProcess failed (err=%lu)", GetLastError()));
+    return false;
+  }
 
+  LogMessage(wxString::Format(L"StartProcessWithInject: created process pid=%lu tid=%lu", pi.dwProcessId, pi.dwThreadId));
   Inject(pi.hProcess, dll_path.wc_str(), "Nothing");
+  LogMessage(L"StartProcessWithInject: Inject called");
   ResumeThread(pi.hThread);
+  LogMessage(L"StartProcessWithInject: thread resumed");
   CloseHandle(pi.hThread);
   process = pi.hProcess;
   return true;
@@ -97,6 +134,7 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   if (info == NULL) return 0;
 
   DWORD wait = WaitForSingleObject(info->process, 3000);
+  LogMessage(wxString::Format(L"RelaunchIfNeeded: wait result=%lu", wait));
   CloseHandle(info->process);
   info->process = INVALID_HANDLE_VALUE;
 
@@ -106,6 +144,10 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
     if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
     {
       if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
+    }
+    else
+    {
+      LogMessage(L"RelaunchIfNeeded: failed to relaunch process");
     }
   }
 
@@ -143,6 +185,8 @@ MyApp::~MyApp(void)
 
 bool MyApp::OnInit(void)
 {
+  InitLogger();
+  LogMessage(wxString::Format(L"OnInit: uMod_Reforged version=%ls", uMod_VERSION));
   SetAppName("uMod_Reforged");
   uMod_Settings set;
   set.Load();
@@ -151,7 +195,9 @@ bool MyApp::OnInit(void)
   CheckForSingleRun = CreateMutex( NULL, true, L"Global\\uMod_Reforged_CheckForSingleRun");
   if (ERROR_ALREADY_EXISTS == GetLastError())
   {
+    LogMessage(L"OnInit: another instance already running");
     wxMessageBox( Language->Error_AlreadyRunning, "ERROR", wxOK|wxICON_ERROR);
+    ShutdownLogger();
     return false;
   }
   uMod_Frame *frame = new uMod_Frame( uMod_VERSION, set);
@@ -164,11 +210,13 @@ bool MyApp::OnInit(void)
 uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
        : wxFrame((wxFrame *)NULL, -1, title, wxPoint(set.XPos,set.YPos), wxSize(set.XSize,set.YSize)), Settings(set)
 {
+  LogMessage(wxString::Format(L"uMod_Frame: created (%ls)", title.wc_str()));
   SetIcon(wxICON(MAINICON));
 
   Server = new uMod_Server( this);
   Server->Create();
   Server->Run();
+  LogMessage(L"uMod_Frame: server thread started");
 
   MainSizer = new wxBoxSizer(wxVERTICAL);
 
@@ -195,9 +243,14 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
     HMODULE dll = LoadLibraryW( L"D3DX9_43.dll");
     if (dll==NULL)
     {
+      LogMessage(wxString::Format(L"uMod_Frame: D3DX9_43.dll missing (err=%lu)", GetLastError()));
       wxMessageBox( Language->Error_D3DX9NotFound, "ERROR", wxOK|wxICON_ERROR);
     }
-    else FreeLibrary(dll);
+    else
+    {
+      LogMessage(L"uMod_Frame: D3DX9_43.dll found");
+      FreeLibrary(dll);
+    }
   }
 
   DeactivateGamesControl();
@@ -205,6 +258,7 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
 
 uMod_Frame::~uMod_Frame(void)
 {
+  LogMessage(L"uMod_Frame: shutting down");
   if (Server!=(uMod_Server*)0)
   {
     KillServer();
@@ -219,6 +273,7 @@ uMod_Frame::~uMod_Frame(void)
   GetSize( &Settings.XSize, &Settings.YSize);
   GetPosition( &Settings.XPos, &Settings.YPos);
   Settings.Save();
+  ShutdownLogger();
 }
 
 bool uMod_Frame::IsGameActive(void) const
@@ -228,6 +283,7 @@ bool uMod_Frame::IsGameActive(void) const
 
 int uMod_Frame::KillServer(void)
 {
+  LogMessage(L"KillServer: attempting to signal server shutdown");
   if (!WaitNamedPipe(PIPE_Game2uMod, 200)) return -1;
   HANDLE pipe = CreateFileW( PIPE_Game2uMod,// pipe name
                  GENERIC_WRITE,
@@ -245,6 +301,7 @@ int uMod_Frame::KillServer(void)
   len++; //to send also the zero
   unsigned long num;
   WriteFile( pipe, (const void*) str, len*sizeof(wchar_t), &num, NULL);
+  LogMessage(L"KillServer: abort message sent");
   CloseHandle(pipe);
   return 0;
 }
@@ -253,6 +310,7 @@ int uMod_Frame::KillServer(void)
 
 void uMod_Frame::OnAddGame( wxCommandEvent &event)
 {
+  LogMessage(L"OnAddGame: new game connection event");
   if (NumberOfGames>=MaxNumberOfGames)
   {
     if (GetMoreMemory( Clients, MaxNumberOfGames, MaxNumberOfGames+10))
@@ -275,6 +333,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
 
   ActivePipe.In = client->Pipe.In;
   ActivePipe.Out = client->Pipe.Out;
+  LogMessage(wxString::Format(L"OnAddGame: ActivePipe.In=%p ActivePipe.Out=%p", ActivePipe.In, ActivePipe.Out));
   GamePage->SetGameInfo( name, "");
   GamePage->ResetConnection();
   if (GamePage->ReloadGame())
@@ -300,6 +359,7 @@ void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
   {
     ActivePipe.In = INVALID_HANDLE_VALUE;
     ActivePipe.Out = INVALID_HANDLE_VALUE;
+    LogMessage(L"OnDeleteGame: ActivePipe cleared");
     Clients[i]->Wait();
     delete Clients[i];
     NumberOfGames--;
@@ -313,6 +373,7 @@ void uMod_Frame::OnDeleteGame( wxCommandEvent &event)
 
 void uMod_Frame::OnClose(wxCloseEvent& event)
 {
+  LogMessage(L"OnClose: close requested");
   if (event.CanVeto() && NumberOfGames>0)
   {
     if (wxMessageBox(Language->ExitGameAnyway, "ERROR", wxYES_NO|wxICON_ERROR)!=wxYES) {event.Veto(); return;}
@@ -404,9 +465,11 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_line)
 {
   if (game_path.IsEmpty()) return -1;
+  LogMessage(wxString::Format(L"LaunchGame: game_path=%ls command_line=%ls", game_path.wc_str(), command_line.wc_str()));
   wxString dll;
   if (!EnsureInjectedDllAvailable(dll))
   {
+    LogMessage(L"LaunchGame: EnsureInjectedDllAvailable failed");
     wxString message = Language->Error_FileOpen;
     message << "\n" << GetInjectedDllPath();
     wxMessageBox( message, "ERROR",  wxOK|wxICON_ERROR);
@@ -416,6 +479,7 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   HANDLE process = INVALID_HANDLE_VALUE;
   if (!StartProcessWithInject(game_path, command_line, dll, process))
   {
+    LogMessage(L"LaunchGame: StartProcessWithInject failed");
     wxMessageBox( Language->Error_ProcessNotStarted, "ERROR",  wxOK|wxICON_ERROR);
     return -1;
   }
@@ -429,10 +493,27 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   if (thread != NULL) CloseHandle(thread);
   else
   {
+    LogMessage(L"LaunchGame: failed to create RelaunchIfNeeded thread");
     if (process != INVALID_HANDLE_VALUE) CloseHandle(process);
     delete info;
   }
   return 0;
+}
+
+wxString uMod_Frame::GetPipeStateDescription(void) const
+{
+  wxString state;
+  state << "Pipe state summary\n";
+  state << "ActivePipe.In: ";
+  if (ActivePipe.In == INVALID_HANDLE_VALUE) state << "INVALID\n";
+  else state << wxString::Format("0x%p\n", (void*)ActivePipe.In);
+  state << "ActivePipe.Out: ";
+  if (ActivePipe.Out == INVALID_HANDLE_VALUE) state << "INVALID\n";
+  else state << wxString::Format("0x%p\n", (void*)ActivePipe.Out);
+  state << "IsGameActive: " << (IsGameActive() ? "true" : "false") << "\n";
+  state << "Connected games: " << NumberOfGames << "\n";
+  state << "Max games: " << MaxNumberOfGames << "\n";
+  return state;
 }
 
 

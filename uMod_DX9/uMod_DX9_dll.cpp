@@ -71,11 +71,14 @@ BOOL WINAPI DllMain( HINSTANCE hModule, DWORD  ul_reason_for_call, LPVOID lpRese
 	{
 	case DLL_PROCESS_ATTACH:
 	{
+	  OpenMessage();
+	  Message("DllMain: DLL_PROCESS_ATTACH module=%p\n", hModule);
 	  InitInstance(hModule);
 		break;
 	}
 	case DLL_PROCESS_DETACH:
 	{
+	  Message("DllMain: DLL_PROCESS_DETACH\n");
 	  ExitInstance();
 	  break;
 	}
@@ -95,7 +98,6 @@ DWORD WINAPI ServerThread( LPVOID lpParam )
 
 void InitInstance(HINSTANCE hModule)
 {
-
   DisableThreadLibraryCalls( hModule ); //reduce overhead
 
   gl_hThisInstance = (HINSTANCE)  hModule;
@@ -103,8 +105,7 @@ void InitInstance(HINSTANCE hModule)
   wchar_t game[MAX_PATH];
   if (HookThisProgram( game)) //ask if we need to hook this program
   {
-    OpenMessage();
-    Message("InitInstance: %lu\n", hModule);
+    Message("InitInstance: module=%p game=%ls\n", hModule, game);
 
     gl_TextureServer = new uMod_TextureServer(game); //create the server which listen on the pipe and prepare the update for the texture clients
 
@@ -117,12 +118,20 @@ void InitInstance(HINSTANCE hModule)
       Message("Detour: Direct3DCreate9\n");
       Direct3DCreate9_fn = (Direct3DCreate9_type)DetourFunc( (BYTE*)Direct3DCreate9_fn, (BYTE*)uMod_Direct3DCreate9, 5);
     }
+    else
+    {
+      Message("Detour: Direct3DCreate9 not found\n");
+    }
 
     Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type) GetProcAddress(gl_hOriginalDll, "Direct3DCreate9Ex");
     if (Direct3DCreate9Ex_fn!=NULL)
     {
       Message("Detour: Direct3DCreate9Ex\n");
       Direct3DCreate9Ex_fn = (Direct3DCreate9Ex_type)DetourFunc( (BYTE*)Direct3DCreate9Ex_fn, (BYTE*)uMod_Direct3DCreate9Ex, 7);
+    }
+    else
+    {
+      Message("Detour: Direct3DCreate9Ex not found\n");
     }
 
     if (gl_TextureServer->OpenPipe(game)) //open the pipe and send the name+path of this executable
@@ -133,6 +142,7 @@ void InitInstance(HINSTANCE hModule)
 
     gl_ServerThread = CreateThread( NULL, 0, ServerThread, NULL, 0, NULL); //creating a thread for the mainloop
     if (gl_ServerThread==NULL) {Message("InitInstance: Serverthread not started\n");}
+    else {Message("InitInstance: Serverthread started\n");}
 
   }
 }
@@ -144,12 +154,14 @@ void LoadOriginalDll(void)
 
   // Append dll name
   strcat_s( buffer, MAX_PATH,"\\d3d9.dll");
+  Message("LoadOriginalDll: %s\n", buffer);
 
   // try to load the system's d3d9.dll, if pointer empty
   if (!gl_hOriginalDll) gl_hOriginalDll = LoadLibrary(buffer);
 
   if (!gl_hOriginalDll)
   {
+    Message("LoadOriginalDll: failed\n");
     ExitProcess(0); // exit the hard way
   }
 }
@@ -218,6 +230,10 @@ IDirect3D9 *APIENTRY uMod_Direct3DCreate9(UINT SDKVersion)
   if (pIDirect3D9_orig)
   {
     pIDirect3D9 = new uMod_IDirect3D9( pIDirect3D9_orig, gl_TextureServer); //creating our uMod_IDirect3D9 object
+  }
+  else
+  {
+    Message("uMod_Direct3DCreate9: original object null\n");
   }
 
   // we detour again
@@ -289,6 +305,7 @@ bool HookThisProgram( wchar_t *ret)
   int i=0;
   while ( Executable[i]) {ret[i]=Executable[i]; i++;}
   ret[i]=0;
+  Message("HookThisProgram: Executable=%ls\n", Executable);
   return true;
 }
 

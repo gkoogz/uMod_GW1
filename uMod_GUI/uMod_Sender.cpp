@@ -408,9 +408,25 @@ int uMod_Sender::SendToGame( void *msg, unsigned long len)
   if (len==0) return (RETURN_BAD_ARGUMENT);
   unsigned long num;
 
-  if (Pipe.Out==INVALID_HANDLE_VALUE) {LastError << Language->Error_NoPipe; return -1;}
+  if (Pipe.Out==INVALID_HANDLE_VALUE)
+  {
+    LogMessage(L"SendToGame: Pipe.Out invalid");
+    LastError << Language->Error_NoPipe;
+    return -1;
+  }
   bool ret = WriteFile( Pipe.Out, (const void*) msg, len, &num, NULL);
-  if (!ret || len!=num) {LastError << Language->Error_WritePipe; return -1;}
-  if (!FlushFileBuffers(Pipe.Out)) {LastError << Language->Error_FlushPipe; return -1;}
+  if (!ret || len!=num)
+  {
+    LogMessage(wxString::Format(L"SendToGame: WriteFile failed ret=%d len=%lu num=%lu err=%lu", ret, len, num, GetLastError()));
+    LastError << Language->Error_WritePipe;
+    return -1;
+  }
+  if (!FlushFileBuffers(Pipe.Out))
+  {
+    LogMessage(wxString::Format(L"SendToGame: FlushFileBuffers failed err=%lu", GetLastError()));
+    LastError << Language->Error_FlushPipe;
+    return -1;
+  }
+  LogMessage(wxString::Format(L"SendToGame: sent %lu bytes", len));
   return 0;
 }

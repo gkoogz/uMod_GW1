@@ -43,7 +43,8 @@ MINIMAL_OBJECTS =  \
   $(OBJS)\uMod_Sender.o \
 	$(OBJS)\uMod_Settings.o \
   $(OBJS)\uMod_AddTexture.o \
-	$(OBJS)\uMod_Language.o
+	$(OBJS)\uMod_Language.o \
+	$(OBJS)\uMod_Logging.o
 	
 ### Conditionally set variables: ###
 
@@ -278,6 +279,9 @@ $(OBJS)\uMod_AddTexture.o: ./uMod_AddTexture.cpp
   $(CXX) -c -o $@ $(MINIMAL_CXXFLAGS)  $(CPPDEPS) $<
 
 $(OBJS)\uMod_Language.o: ./uMod_Language.cpp
+	$(CXX) -c -o $@ $(MINIMAL_CXXFLAGS)  $(CPPDEPS) $<
+
+$(OBJS)\uMod_Logging.o: ./uMod_Logging.cpp
 	$(CXX) -c -o $@ $(MINIMAL_CXXFLAGS)  $(CPPDEPS) $<
 
 

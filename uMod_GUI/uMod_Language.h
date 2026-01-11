@@ -55,6 +55,7 @@ public:
   wxString ButtonSavePackage;
   wxString ButtonLaunch;
   wxString ButtonLocateExe;
+  wxString ButtonReportPipeState;
   wxString SelectModsHint;
   wxString LoadDefaultMods;
 
