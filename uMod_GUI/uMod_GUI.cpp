@@ -31,6 +31,16 @@ struct RelaunchInfo
   HANDLE process;
 };
 
+static bool WaitForDiLog(const wxString &log_path, int attempts, int delay_ms)
+{
+  for (int i = 0; i < attempts; i++)
+  {
+    if (wxFile::Access(log_path, wxFile::read)) return true;
+    Sleep(delay_ms);
+  }
+  return wxFile::Access(log_path, wxFile::read);
+}
+
 static wxString GetInjectedGamesPath(void)
 {
   return GetReforgedAppDataPath("uMod_Reforged_DI_Games.txt");
@@ -124,6 +134,14 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
   LogMessage(wxString::Format(L"StartProcessWithInject: created process pid=%lu tid=%lu", pi.dwProcessId, pi.dwThreadId));
   Inject(pi.hProcess, dll_path.wc_str(), "Nothing");
   LogMessage(L"StartProcessWithInject: Inject called");
+  if (WaitForDiLog(di_log_path, 5, 200))
+  {
+    LogMessage(L"StartProcessWithInject: DI log detected");
+  }
+  else
+  {
+    LogMessage(L"StartProcessWithInject: DI log not found after injection");
+  }
   ResumeThread(pi.hThread);
   LogMessage(L"StartProcessWithInject: thread resumed");
   CloseHandle(pi.hThread);

@@ -556,6 +556,15 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
     LogMessage(wxString::Format(L"Inject: CreateRemoteThread ok thread=%p", hThread));
     DWORD wait = WaitForSingleObject(hThread, INFINITE);
     LogMessage(wxString::Format(L"Inject: thread wait result=%lu", wait));
+    DWORD exit_code = 0;
+    if (GetExitCodeThread(hThread, &exit_code))
+    {
+      LogMessage(wxString::Format(L"Inject: thread exit code=%lu", exit_code));
+    }
+    else
+    {
+      LogMessage(wxString::Format(L"Inject: GetExitCodeThread failed err=%lu", GetLastError()));
+    }
     CloseHandle(hThread);
   }
 
