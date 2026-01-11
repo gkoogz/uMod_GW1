@@ -639,7 +639,7 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     }
     wxFileName file_name(files[i]);
     wxString entry_name = file_name.GetFullName();
-    def << wxString::Format("%08X|%s\n", hash, entry_name);
+    def << wxString::Format("%08X|%s\r\n", hash, entry_name);
     if (ZipAdd(zip_handle, entry_name.wc_str(), files[i].wc_str()) != ZR_OK)
     {
       CloseZip(zip_handle);
@@ -649,25 +649,13 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     }
   }
 
-  wxCharBuffer def_buffer = def.ToUTF8();
+  wxCharBuffer def_buffer = def.mb_str();
   if (ZipAdd(zip_handle, L"texmod.def", (void*)def_buffer.data(), def_buffer.length()) != ZR_OK)
   {
     CloseZip(zip_handle);
     wxRemoveFile(temp_path);
     LastError = Language->Error_SaveFile;
     return -1;
-  }
-
-  if (!name.IsEmpty() || !author.IsEmpty())
-  {
-    wxString comment = name;
-    if (!author.IsEmpty())
-    {
-      if (!comment.IsEmpty()) comment << "\n";
-      comment << Language->Author << author;
-    }
-    wxCharBuffer comment_buffer = comment.ToUTF8();
-    ZipAdd(zip_handle, L"Comment.txt", (void*)comment_buffer.data(), comment_buffer.length());
   }
 
   CloseZip(zip_handle);
@@ -710,9 +698,11 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     return -1;
   }
 
-  wxCharBuffer author_buffer = author.ToUTF8();
+  wxCharBuffer author_buffer = author.mb_str();
   unsigned long author_len = author_buffer.length();
-  unsigned long total_len = zip_len + 1 + author_len;
+  unsigned long total_len = zip_len;
+  bool append_author = author_len > 0;
+  if (append_author) total_len += 1 + author_len;
   char *tpf_buffer = NULL;
   try {tpf_buffer = new char[total_len];}
   catch (...) {tpf_buffer = NULL;}
@@ -724,8 +714,11 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
   }
 
   memcpy(tpf_buffer, zip_buffer, zip_len);
-  tpf_buffer[zip_len] = 0;
-  if (author_len>0) memcpy(tpf_buffer + zip_len + 1, author_buffer.data(), author_len);
+  if (append_author)
+  {
+    tpf_buffer[zip_len] = 0;
+    memcpy(tpf_buffer + zip_len + 1, author_buffer.data(), author_len);
+  }
   delete [] zip_buffer;
 
   unsigned int *buff = (unsigned int*) tpf_buffer;
