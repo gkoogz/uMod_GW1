@@ -102,6 +102,7 @@ void* uMod_Server::Entry(void)
           {
             //Beep(1200,300);
             CloseHandle(pipe_in);
+            CloseHandle(pipe_out);
             return NULL;
           }
 
@@ -129,4 +130,3 @@ void* uMod_Server::Entry(void)
   }
   return NULL;
 }
-

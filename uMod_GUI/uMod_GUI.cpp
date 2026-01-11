@@ -228,7 +228,12 @@ bool uMod_Frame::IsGameActive(void) const
 
 int uMod_Frame::KillServer(void)
 {
-  if (!WaitNamedPipe(PIPE_Game2uMod, 200)) return -1;
+  DWORD start = GetTickCount();
+  while (!WaitNamedPipe(PIPE_Game2uMod, 200))
+  {
+    if (GetLastError() != ERROR_SEM_TIMEOUT) return -1;
+    if (GetTickCount() - start > 2000) return -1;
+  }
   HANDLE pipe = CreateFileW( PIPE_Game2uMod,// pipe name
                  GENERIC_WRITE,
                  0,              // no sharing

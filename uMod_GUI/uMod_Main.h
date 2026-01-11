@@ -155,16 +155,8 @@ int GetMoreMemory(T* &old_array, int old_num, int new_num)
 
 inline wxString GetReforgedAppDataDir(void)
 {
-  wxString base = wxStandardPaths::Get().GetUserLocalDataDir();
-  if (base.IsEmpty()) base = wxStandardPaths::Get().GetUserConfigDir();
-  wxFileName dir(base, "");
-  if (!dir.GetPath().EndsWith(uMod_APP_DIR)) dir.AppendDir(uMod_APP_DIR);
-  wxString full_path = dir.GetPath();
-  if (!full_path.IsEmpty())
-  {
-    wxFileName::Mkdir(full_path, wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
-  }
-  return full_path;
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  return exe_path.GetPath();
 }
 
 inline wxString GetReforgedAppDataPath(const wxString &file_name)
