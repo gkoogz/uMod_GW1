@@ -20,6 +20,13 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+
 #include <Windows.h>
 #include <TlHelp32.h>
 #include <wx/filename.h>
