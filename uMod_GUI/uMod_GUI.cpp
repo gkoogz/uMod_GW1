@@ -151,10 +151,12 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
   if (info == NULL) return 0;
 
+  AppendToLog("Relaunch monitor started.");
   DWORD wait = WaitForSingleObject(info->process, 3000);
   CloseHandle(info->process);
   info->process = INVALID_HANDLE_VALUE;
 
+  AppendToLog(wxString::Format("Relaunch monitor wait result: %lu", wait));
   if (wait == WAIT_OBJECT_0)
   {
     HANDLE proc = INVALID_HANDLE_VALUE;
@@ -162,9 +164,14 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
     {
       if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
     }
+    else
+    {
+      AppendToLog("Relaunch attempt failed.");
+    }
   }
 
   delete info;
+  AppendToLog("Relaunch monitor finished.");
   return 0;
 }
 }
@@ -472,6 +479,7 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   HANDLE process = INVALID_HANDLE_VALUE;
   if (!StartProcessWithInject(game_path, command_line, dll, process))
   {
+    AppendToLog("LaunchGame failed to start process.");
     wxMessageBox( Language->Error_ProcessNotStarted, "ERROR",  wxOK|wxICON_ERROR);
     return -1;
   }
@@ -485,6 +493,7 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   if (thread != NULL) CloseHandle(thread);
   else
   {
+    AppendToLog("Failed to create relaunch monitor thread.");
     if (process != INVALID_HANDLE_VALUE) CloseHandle(process);
     delete info;
   }
