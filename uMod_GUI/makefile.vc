@@ -43,6 +43,7 @@ MINIMAL_OBJECTS = \
 	$(OBJS)\uMod_Client.obj \
 	$(OBJS)\uMod_File.obj \
 	$(OBJS)\uMod_Sender.obj \
+	$(OBJS)\uMod_Log.obj \
 	$(OBJS)\uMod_Settings.obj \
 	$(OBJS)\uMod_AddTexture.obj \
 	$(OBJS)\uMod_Language.obj \
@@ -395,6 +396,9 @@ $(OBJS)\uMod_File.obj: .\uMod_File.cpp
 
 $(OBJS)\uMod_Sender.obj: .\uMod_Sender.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_Sender.cpp
+
+$(OBJS)\uMod_Log.obj: .\uMod_Log.cpp
+  $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_Log.cpp
 
 $(OBJS)\uMod_Settings.obj: .\uMod_Settings.cpp
   $(CXX) /c /nologo /TP /Fo$@ $(MINIMAL_CXXFLAGS) .\uMod_Settings.cpp

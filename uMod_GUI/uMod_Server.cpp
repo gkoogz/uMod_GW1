@@ -19,6 +19,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include "uMod_Log.h"
 
 
 uMod_Server::uMod_Server(uMod_Frame *frame) : wxThread(wxTHREAD_JOINABLE)
@@ -56,7 +57,12 @@ void* uMod_Server::Entry(void)
        SMALL_BUFSIZE,                  // input buffer size
        0,                        // client time-out
        NULL);                    // default security attribute
-    if (pipe_in == INVALID_HANDLE_VALUE) return NULL;
+    if (pipe_in == INVALID_HANDLE_VALUE)
+    {
+      DWORD error_code = GetLastError();
+      AppendToLog("CreateNamedPipe(PIPE_Game2uMod) failed. Error " + wxString::Format("%lu: ", error_code) + FormatWindowsError(error_code));
+      return NULL;
+    }
 
     pipe_out = CreateNamedPipeW(
        PIPE_uMod2Game,             // pipe name
@@ -68,7 +74,13 @@ void* uMod_Server::Entry(void)
        BIG_BUFSIZE,                  // input buffer size
        0,                        // client time-out
        NULL);                    // default security attribute
-    if (pipe_out == INVALID_HANDLE_VALUE) return NULL;
+    if (pipe_out == INVALID_HANDLE_VALUE)
+    {
+      DWORD error_code = GetLastError();
+      AppendToLog("CreateNamedPipe(PIPE_uMod2Game) failed. Error " + wxString::Format("%lu: ", error_code) + FormatWindowsError(error_code));
+      CloseHandle(pipe_in);
+      return NULL;
+    }
 
 
     // at first connect to the incoming pipe !!!
@@ -118,15 +130,27 @@ void* uMod_Server::Entry(void)
           }
           else
           {
+            DWORD error_code = GetLastError();
+            AppendToLog("ConnectNamedPipe(PIPE_uMod2Game) failed. Error " + wxString::Format("%lu: ", error_code) + FormatWindowsError(error_code));
             CloseHandle(pipe_in);
             CloseHandle(pipe_out);
             return NULL;
           }
         }
       }
+      else
+      {
+        DWORD error_code = GetLastError();
+        AppendToLog("ReadFile(PIPE_Game2uMod) failed. Error " + wxString::Format("%lu: ", error_code) + FormatWindowsError(error_code));
+      }
    }
-   else CloseHandle(pipe_in);
+   else
+   {
+      DWORD error_code = GetLastError();
+      AppendToLog("ConnectNamedPipe(PIPE_Game2uMod) failed. Error " + wxString::Format("%lu: ", error_code) + FormatWindowsError(error_code));
+      CloseHandle(pipe_in);
+      CloseHandle(pipe_out);
+   }
   }
   return NULL;
 }
-
