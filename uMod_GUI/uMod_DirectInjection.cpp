@@ -144,6 +144,7 @@ bool Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	dwCodecaveAddress = PtrToUlong(codecaveAddress);
 	if (codecaveAddress == NULL)
 	{
+		SetLastError(ERROR_NOT_ENOUGH_MEMORY);
 		HeapFree(GetProcessHeap(), 0, workspace);
 		return false;
 	}
@@ -501,16 +502,40 @@ bool Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 //------------------------------------------//
 
 	// Change page protection so we can write executable code
-	VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, PAGE_EXECUTE_READWRITE, &oldProtect);
+	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, PAGE_EXECUTE_READWRITE, &oldProtect))
+	{
+		SetLastError(GetLastError());
+		HeapFree(GetProcessHeap(), 0, workspace);
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		return false;
+	}
 
 	// Write out the patch
-	WriteProcessMemory(hProcess, codecaveAddress, workspace, workspaceIndex, &bytesRet);
+	if (!WriteProcessMemory(hProcess, codecaveAddress, workspace, workspaceIndex, &bytesRet))
+	{
+		SetLastError(GetLastError());
+		HeapFree(GetProcessHeap(), 0, workspace);
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		return false;
+	}
 
 	// Restore page protection
-	VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect);
+	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect))
+	{
+		SetLastError(GetLastError());
+		HeapFree(GetProcessHeap(), 0, workspace);
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		return false;
+	}
 
 	// Make sure our changes are written right away
-	FlushInstructionCache(hProcess, codecaveAddress, workspaceIndex);
+	if (!FlushInstructionCache(hProcess, codecaveAddress, workspaceIndex))
+	{
+		SetLastError(GetLastError());
+		HeapFree(GetProcessHeap(), 0, workspace);
+		VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+		return false;
+	}
 
 	// Execute the thread now and wait for it to exit, note we execute where the code starts, and not the codecave start
 	// (since we wrote strings at the start of the codecave) -- NOTE: void* used for VC6 compatibility instead of UlongToPtr
@@ -525,6 +550,7 @@ bool Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	DWORD wait_result = WaitForSingleObject(hThread, inject_timeout_ms);
 	if (wait_result != WAIT_OBJECT_0)
 	{
+		if (wait_result == WAIT_TIMEOUT) SetLastError(ERROR_TIMEOUT);
 		CloseHandle(hThread);
 		HeapFree(GetProcessHeap(), 0, workspace);
 		return false;

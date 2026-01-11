@@ -31,6 +31,24 @@ struct RelaunchInfo
   HANDLE process;
 };
 
+static wxString FormatWindowsError(DWORD error_code)
+{
+  if (error_code == 0) return "Unknown error.";
+  wchar_t *buffer = NULL;
+  DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+  DWORD len = FormatMessageW(flags, NULL, error_code, 0, (LPWSTR)&buffer, 0, NULL);
+  wxString message;
+  if (len > 0 && buffer != NULL)
+  {
+    message = buffer;
+    LocalFree(buffer);
+  }
+  if (message.IsEmpty()) message = "Unknown error.";
+  message.Trim(true);
+  message.Trim(false);
+  return message;
+}
+
 static wxString GetInjectedGamesPath(void)
 {
   return GetReforgedAppDataPath("uMod_Reforged_DI_Games.txt");
@@ -86,6 +104,10 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
 
   if (!Inject(pi.hProcess, dll_path.wc_str(), "Nothing"))
   {
+    DWORD error_code = GetLastError();
+    wxString message = "Could not inject the uMod DLL into the game process.";
+    message << "\nError " << error_code << ": " << FormatWindowsError(error_code);
+    wxMessageBox(message, "ERROR", wxOK|wxICON_ERROR);
     TerminateProcess(pi.hProcess, 0);
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
