@@ -32,6 +32,13 @@ struct RelaunchInfo
   HANDLE process;
 };
 
+struct SpawnMonitorInfo
+{
+  wxString exe_path;
+  wxString dll_path;
+  DWORD exclude_pid;
+};
+
 static wxString GetInjectedGamesPath(void)
 {
   return GetReforgedAppDataPath("uMod_Reforged_DI_Games.txt");
@@ -127,6 +134,60 @@ static bool InjectIntoExistingProcess(const wxString &game_path, const wxString 
   return injected;
 }
 
+static bool InjectIntoSpawnedProcess(const wxString &game_path, const wxString &dll_path, DWORD exclude_pid, HANDLE &process)
+{
+  wxString exe_name = game_path.AfterLast('\\');
+  if (exe_name.IsEmpty()) return false;
+
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) return false;
+
+  PROCESSENTRY32W entry;
+  entry.dwSize = sizeof(entry);
+  bool injected = false;
+  if (Process32FirstW(snapshot, &entry))
+  {
+    do
+    {
+      if (entry.th32ProcessID == exclude_pid) continue;
+      if (exe_name.CmpNoCase(entry.szExeFile) == 0)
+      {
+        HANDLE proc = OpenProcess(PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION |
+                                  PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ,
+                                  FALSE, entry.th32ProcessID);
+        if (proc != NULL)
+        {
+          Inject(proc, dll_path.wc_str(), "Nothing");
+          process = proc;
+          injected = true;
+          break;
+        }
+      }
+    } while (Process32NextW(snapshot, &entry));
+  }
+
+  CloseHandle(snapshot);
+  return injected;
+}
+
+static DWORD WINAPI MonitorSpawnedProcess(LPVOID data)
+{
+  SpawnMonitorInfo *info = reinterpret_cast<SpawnMonitorInfo*>(data);
+  if (info == NULL) return 0;
+
+  const int attempts = 80;
+  HANDLE proc = INVALID_HANDLE_VALUE;
+  for (int i = 0; i < attempts; ++i)
+  {
+    if (InjectIntoSpawnedProcess(info->exe_path, info->dll_path, info->exclude_pid, proc)) break;
+    Sleep(250);
+  }
+
+  if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
+  delete info;
+  return 0;
+}
+
 static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
 {
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
@@ -149,6 +210,17 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
     if (proc == INVALID_HANDLE_VALUE &&
         StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
     {
+      DWORD process_id = GetProcessId(proc);
+      if (process_id != 0)
+      {
+        SpawnMonitorInfo *monitor_info = new SpawnMonitorInfo;
+        monitor_info->exe_path = info->exe_path;
+        monitor_info->dll_path = info->dll_path;
+        monitor_info->exclude_pid = process_id;
+        HANDLE monitor_thread = CreateThread(NULL, 0, MonitorSpawnedProcess, monitor_info, 0, NULL);
+        if (monitor_thread != NULL) CloseHandle(monitor_thread);
+        else delete monitor_info;
+      }
       if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
     }
     else if (proc != INVALID_HANDLE_VALUE)
@@ -466,6 +538,18 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   {
     wxMessageBox( Language->Error_ProcessNotStarted, "ERROR",  wxOK|wxICON_ERROR);
     return -1;
+  }
+
+  DWORD process_id = GetProcessId(process);
+  if (process_id != 0)
+  {
+    SpawnMonitorInfo *monitor_info = new SpawnMonitorInfo;
+    monitor_info->exe_path = game_path;
+    monitor_info->dll_path = dll;
+    monitor_info->exclude_pid = process_id;
+    HANDLE monitor_thread = CreateThread(NULL, 0, MonitorSpawnedProcess, monitor_info, 0, NULL);
+    if (monitor_thread != NULL) CloseHandle(monitor_thread);
+    else delete monitor_info;
   }
 
   RelaunchInfo *info = new RelaunchInfo;
