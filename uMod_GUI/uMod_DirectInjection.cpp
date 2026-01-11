@@ -110,9 +110,15 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 //------------------------------------------//
 // Variable initialization.					//
 //------------------------------------------//
+  LogMessage(wxString::Format(L"Inject: begin process=%p dll=%ls func=%hs", hProcess, dllname, funcname));
 
 	// Get the address of the main DLL
 	kernel32	= LoadLibraryW(L"kernel32.dll");
+  if (kernel32 == NULL)
+  {
+    LogMessage(wxString::Format(L"Inject: LoadLibraryW(kernel32.dll) failed err=%lu", GetLastError()));
+    return;
+  }
 
 	// Get our functions
 	loadlibrary		= GetProcAddress(kernel32,	"LoadLibraryA");
@@ -120,6 +126,8 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	exitprocess		= GetProcAddress(kernel32,	"ExitProcess");
 	exitthread		= GetProcAddress(kernel32,	"ExitThread");
 	freelibraryandexitthread = GetProcAddress(kernel32,	"FreeLibraryAndExitThread");
+  LogMessage(wxString::Format(L"Inject: symbols LoadLibraryA=%p GetProcAddress=%p ExitProcess=%p ExitThread=%p FreeLibraryAndExitThread=%p",
+                              loadlibrary, getprocaddress, exitprocess, exitthread, freelibraryandexitthread));
 
 // This section will cause compiler warnings on VS8, 
 // you can upgrade the functions or ignore them
@@ -137,10 +145,21 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 
 	// Create the workspace
 	workspace = (LPBYTE)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 1024);
+  if (workspace == NULL)
+  {
+    LogMessage(wxString::Format(L"Inject: HeapAlloc failed err=%lu", GetLastError()));
+    return;
+  }
 
 	// Allocate space for the codecave in the process
 	codecaveAddress = VirtualAllocEx(hProcess, 0, 1024, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	dwCodecaveAddress = PtrToUlong(codecaveAddress);
+  if (codecaveAddress == NULL)
+  {
+    LogMessage(wxString::Format(L"Inject: VirtualAllocEx failed err=%lu", GetLastError()));
+    HeapFree(GetProcessHeap(), 0, workspace);
+    return;
+  }
 
 // Note there is no error checking done above for any functions that return a pointer/handle.
 // I could have added them, but it'd just add more messiness to the code and not provide any real
@@ -495,16 +514,32 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 //------------------------------------------//
 
 	// Change page protection so we can write executable code
-	VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, PAGE_EXECUTE_READWRITE, &oldProtect);
+	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, PAGE_EXECUTE_READWRITE, &oldProtect))
+  {
+    LogMessage(wxString::Format(L"Inject: VirtualProtectEx failed err=%lu", GetLastError()));
+  }
 
 	// Write out the patch
-	WriteProcessMemory(hProcess, codecaveAddress, workspace, workspaceIndex, &bytesRet);
+	if (!WriteProcessMemory(hProcess, codecaveAddress, workspace, workspaceIndex, &bytesRet))
+  {
+    LogMessage(wxString::Format(L"Inject: WriteProcessMemory failed err=%lu", GetLastError()));
+  }
+  else
+  {
+    LogMessage(wxString::Format(L"Inject: WriteProcessMemory wrote %lu bytes", bytesRet));
+  }
 
 	// Restore page protection
-	VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect);
+	if (!VirtualProtectEx(hProcess, codecaveAddress, workspaceIndex, oldProtect, &oldProtect))
+  {
+    LogMessage(wxString::Format(L"Inject: VirtualProtectEx restore failed err=%lu", GetLastError()));
+  }
 
 	// Make sure our changes are written right away
-	FlushInstructionCache(hProcess, codecaveAddress, workspaceIndex);
+	if (!FlushInstructionCache(hProcess, codecaveAddress, workspaceIndex))
+  {
+    LogMessage(wxString::Format(L"Inject: FlushInstructionCache failed err=%lu", GetLastError()));
+  }
 
 	// Free the workspace memory
 	HeapFree(GetProcessHeap(), 0, workspace);
@@ -512,8 +547,22 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	// Execute the thread now and wait for it to exit, note we execute where the code starts, and not the codecave start
 	// (since we wrote strings at the start of the codecave) -- NOTE: void* used for VC6 compatibility instead of UlongToPtr
 	hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)((void*)codecaveExecAddr), 0, 0, NULL);
-	WaitForSingleObject(hThread, INFINITE); 
+  if (hThread == NULL)
+  {
+    LogMessage(wxString::Format(L"Inject: CreateRemoteThread failed err=%lu", GetLastError()));
+  }
+  else
+  {
+    LogMessage(wxString::Format(L"Inject: CreateRemoteThread ok thread=%p", hThread));
+    DWORD wait = WaitForSingleObject(hThread, INFINITE);
+    LogMessage(wxString::Format(L"Inject: thread wait result=%lu", wait));
+    CloseHandle(hThread);
+  }
 
 	// Free the memory in the process that we allocated
-	VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+	if (!VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE))
+  {
+    LogMessage(wxString::Format(L"Inject: VirtualFreeEx failed err=%lu", GetLastError()));
+  }
+  LogMessage(L"Inject: end");
 }

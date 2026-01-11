@@ -1,8 +1,4 @@
-!IFDEF LOG_MESSAGE
 precompiler_flag = /D "LOG_MESSAGE" /D "DIRECT_INJECTION"
-!ELSE
-precompiler_flag =  /D "DIRECT_INJECTION"
-!ENDIF
 
 def_file = /DEF:"uMod_DX9_dll_DIRECT_INJECTION.def"
 obj_suff = DI.obj

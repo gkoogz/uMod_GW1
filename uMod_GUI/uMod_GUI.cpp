@@ -109,7 +109,10 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
   if (!command_line.IsEmpty()) exe << "\"" << game_path << "\" " << command_line;
   else exe = game_path;
 
+  wxString game_dir = game_path.BeforeLast('\\');
+  wxString di_log_path = game_dir + "\\uMod_Reforged_DI_debug.log";
   LogMessage(wxString::Format(L"StartProcessWithInject: game=%ls cmd=%ls dll=%ls", game_path.wc_str(), command_line.wc_str(), dll_path.wc_str()));
+  LogMessage(wxString::Format(L"StartProcessWithInject: expected DI log at %ls", di_log_path.wc_str()));
   bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
                               CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
   if (!result)
