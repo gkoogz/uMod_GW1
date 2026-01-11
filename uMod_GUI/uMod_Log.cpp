@@ -22,6 +22,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include <wx/file.h>
 #include <wx/filename.h>
 #include <wx/stdpaths.h>
+#include <wx/utils.h>
 
 static wxString GetLogPath(void)
 {
@@ -29,32 +30,24 @@ static wxString GetLogPath(void)
   return exe_path.GetPathWithSep() + "uMod_Reforged.log";
 }
 
-wxString FormatWindowsError(DWORD error_code)
+wxString FormatWindowsError(unsigned long error_code)
 {
   if (error_code == 0) return "Unknown error.";
-  wchar_t *buffer = NULL;
-  DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
-  DWORD len = FormatMessageW(flags, NULL, error_code, 0, (LPWSTR)&buffer, 0, NULL);
-  wxString message;
-  if (len > 0 && buffer != NULL)
-  {
-    message = buffer;
-    LocalFree(buffer);
-  }
-  if (message.IsEmpty()) message = "Unknown error.";
+  wxString message = wxSysErrorMsg(error_code);
+  if (message.IsEmpty()) return "Unknown error.";
   message.Trim(true);
   message.Trim(false);
   return message;
 }
 
-wxString FormatWaitResult(DWORD wait_result)
+wxString FormatWaitResult(unsigned long wait_result)
 {
   switch (wait_result)
   {
-    case WAIT_OBJECT_0: return "WAIT_OBJECT_0";
-    case WAIT_TIMEOUT: return "WAIT_TIMEOUT";
-    case WAIT_ABANDONED: return "WAIT_ABANDONED";
-    case WAIT_FAILED: return "WAIT_FAILED";
+    case 0x0: return "WAIT_OBJECT_0";
+    case 0x102: return "WAIT_TIMEOUT";
+    case 0x80: return "WAIT_ABANDONED";
+    case 0xFFFFFFFF: return "WAIT_FAILED";
     default: return wxString::Format("WAIT_%lu", wait_result);
   }
 }

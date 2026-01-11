@@ -19,11 +19,10 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #ifndef uMod_LOG_H_
 #define uMod_LOG_H_
 
-#include <windows.h>
 #include <wx/string.h>
 
-wxString FormatWindowsError(DWORD error_code);
-wxString FormatWaitResult(DWORD wait_result);
+wxString FormatWindowsError(unsigned long error_code);
+wxString FormatWaitResult(unsigned long wait_result);
 void AppendToLog(const wxString &line);
 
 #endif /* uMod_LOG_H_ */
