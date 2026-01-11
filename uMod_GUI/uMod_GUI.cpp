@@ -211,7 +211,7 @@ bool MyApp::OnInit(void)
   set.Load();
 
   Language = new uMod_Language(set.Language);
-  CheckForSingleRun = CreateMutex( NULL, true, L"Global\\uMod_Reforged_CheckForSingleRun");
+  CheckForSingleRun = CreateMutexW( NULL, true, L"Global\\uMod_Reforged_CheckForSingleRun");
   if (ERROR_ALREADY_EXISTS == GetLastError())
   {
     wxMessageBox( Language->Error_AlreadyRunning, "ERROR", wxOK|wxICON_ERROR);
@@ -291,7 +291,7 @@ bool uMod_Frame::IsGameActive(void) const
 
 int uMod_Frame::KillServer(void)
 {
-  if (!WaitNamedPipe(PIPE_Game2uMod, 200)) return -1;
+  if (!WaitNamedPipeW(PIPE_Game2uMod, 200)) return -1;
   HANDLE pipe = CreateFileW( PIPE_Game2uMod,// pipe name
                  GENERIC_WRITE,
                  0,              // no sharing
