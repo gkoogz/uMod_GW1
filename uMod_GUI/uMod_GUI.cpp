@@ -84,7 +84,14 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
                               CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
   if (!result) return false;
 
-  Inject(pi.hProcess, dll_path.wc_str(), "Nothing");
+  if (!Inject(pi.hProcess, dll_path.wc_str(), "Nothing"))
+  {
+    TerminateProcess(pi.hProcess, 0);
+    CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
+    return false;
+  }
+
   ResumeThread(pi.hThread);
   CloseHandle(pi.hThread);
   process = pi.hProcess;

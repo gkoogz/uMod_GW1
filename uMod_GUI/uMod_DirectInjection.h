@@ -22,6 +22,6 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
-void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname);
+bool Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname);
 
 #endif /* uMod_INJECTDIRECTLY_H_ */

@@ -49,7 +49,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 //		also adds error handling, so the end user knows if something went wrong.
 /***************************************************************************************************/
 
-void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
+bool Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 {
 //------------------------------------------//
 // Function variables.						//
@@ -137,10 +137,16 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 
 	// Create the workspace
 	workspace = (LPBYTE)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, 1024);
+	if (workspace == NULL) return false;
 
 	// Allocate space for the codecave in the process
 	codecaveAddress = VirtualAllocEx(hProcess, 0, 1024, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	dwCodecaveAddress = PtrToUlong(codecaveAddress);
+	if (codecaveAddress == NULL)
+	{
+		HeapFree(GetProcessHeap(), 0, workspace);
+		return false;
+	}
 
 // Note there is no error checking done above for any functions that return a pointer/handle.
 // I could have added them, but it'd just add more messiness to the code and not provide any real
@@ -506,14 +512,27 @@ void Inject(HANDLE hProcess, const wchar_t* dllname, const char* funcname)
 	// Make sure our changes are written right away
 	FlushInstructionCache(hProcess, codecaveAddress, workspaceIndex);
 
-	// Free the workspace memory
-	HeapFree(GetProcessHeap(), 0, workspace);
-
 	// Execute the thread now and wait for it to exit, note we execute where the code starts, and not the codecave start
 	// (since we wrote strings at the start of the codecave) -- NOTE: void* used for VC6 compatibility instead of UlongToPtr
 	hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)((void*)codecaveExecAddr), 0, 0, NULL);
-	WaitForSingleObject(hThread, INFINITE); 
+	if (hThread == NULL)
+	{
+		HeapFree(GetProcessHeap(), 0, workspace);
+		return false;
+	}
+
+	const DWORD inject_timeout_ms = 10000;
+	DWORD wait_result = WaitForSingleObject(hThread, inject_timeout_ms);
+	if (wait_result != WAIT_OBJECT_0)
+	{
+		CloseHandle(hThread);
+		HeapFree(GetProcessHeap(), 0, workspace);
+		return false;
+	}
+	CloseHandle(hThread);
+	HeapFree(GetProcessHeap(), 0, workspace);
 
 	// Free the memory in the process that we allocated
 	VirtualFreeEx(hProcess, codecaveAddress, 0, MEM_RELEASE);
+	return true;
 }
