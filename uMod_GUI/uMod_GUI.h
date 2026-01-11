@@ -59,6 +59,7 @@ private:
 
   uMod_GamePage *GamePage;
   PipeStruct ActivePipe;
+  HANDLE LaunchConnectionEvent;
 
 
   wxBoxSizer *MainSizer;

@@ -30,6 +30,8 @@ struct RelaunchInfo
   wxString command_line;
   wxString dll_path;
   HANDLE process;
+  HANDLE connected_event;
+  DWORD connect_timeout_ms;
 };
 
 static wxString GetInjectedGamesPath(void)
@@ -117,34 +119,29 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
   if (info == NULL) return 0;
 
-  AppendToLog(wxString::Format("Relaunch monitor started for %s", info->exe_path));
-  DWORD wait = WaitForSingleObject(info->process, 3000);
+  AppendToLog(wxString::Format("Launch monitor started for %s", info->exe_path));
+  HANDLE handles[2] = {info->process, info->connected_event};
+  DWORD wait = WaitForMultipleObjects(2, handles, FALSE, info->connect_timeout_ms);
   DWORD wait_error = (wait == WAIT_FAILED) ? GetLastError() : 0;
-  CloseHandle(info->process);
-  info->process = INVALID_HANDLE_VALUE;
 
-  wxString wait_message = "Relaunch monitor wait result: ";
+  wxString wait_message = "Launch monitor wait result: ";
   wait_message << FormatWaitResult(wait);
   if (wait == WAIT_FAILED)
   {
     wait_message << " Error " << wait_error << ": " << FormatWindowsError(wait_error);
   }
   AppendToLog(wait_message);
-  if (wait == WAIT_OBJECT_0)
+
+  if (wait == WAIT_TIMEOUT)
   {
-    HANDLE proc = INVALID_HANDLE_VALUE;
-    if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
-    {
-      if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
-    }
-    else
-    {
-      AppendToLog("Relaunch attempt failed.");
-    }
+    AppendToLog("Launch monitor timed out waiting for pipe connection. Terminating process.");
+    TerminateProcess(info->process, 0);
   }
 
+  CloseHandle(info->process);
+  info->process = INVALID_HANDLE_VALUE;
   delete info;
-  AppendToLog("Relaunch monitor finished.");
+  AppendToLog("Launch monitor finished.");
   return 0;
 }
 }
@@ -209,6 +206,12 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
 
   ActivePipe.In = INVALID_HANDLE_VALUE;
   ActivePipe.Out = INVALID_HANDLE_VALUE;
+  LaunchConnectionEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+  if (LaunchConnectionEvent == NULL)
+  {
+    DWORD error_code = GetLastError();
+    AppendToLog("CreateEvent failed. Error " + wxString::Format("%lu: ", error_code) + FormatWindowsError(error_code));
+  }
   GamePage = new uMod_GamePage( this, "", "", ActivePipe, this);
   MainSizer->Add( (wxWindow*) GamePage, 1, wxEXPAND , 0 );
 
@@ -246,6 +249,12 @@ uMod_Frame::~uMod_Frame(void)
     Server->Wait();
     delete Server;
     Server = NULL;
+  }
+
+  if (LaunchConnectionEvent != NULL)
+  {
+    CloseHandle(LaunchConnectionEvent);
+    LaunchConnectionEvent = NULL;
   }
 
   if (Clients!=NULL) delete [] Clients;
@@ -310,6 +319,7 @@ void uMod_Frame::OnAddGame( wxCommandEvent &event)
 
   ActivePipe.In = client->Pipe.In;
   ActivePipe.Out = client->Pipe.Out;
+  if (LaunchConnectionEvent != NULL) SetEvent(LaunchConnectionEvent);
   GamePage->SetGameInfo( name, "");
   GamePage->ResetConnection();
   if (GamePage->ReloadGame())
@@ -443,6 +453,7 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
     AppendToLog("LaunchGame requested for " + game_path);
   else
     AppendToLog("LaunchGame requested for " + game_path + " " + command_line);
+  if (LaunchConnectionEvent != NULL) ResetEvent(LaunchConnectionEvent);
   wxString dll;
   if (!EnsureInjectedDllAvailable(dll))
   {
@@ -466,11 +477,13 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   info->command_line = command_line;
   info->dll_path = dll;
   info->process = process;
+  info->connected_event = LaunchConnectionEvent;
+  info->connect_timeout_ms = 10000;
   HANDLE thread = CreateThread(NULL, 0, RelaunchIfNeeded, info, 0, NULL);
   if (thread != NULL) CloseHandle(thread);
   else
   {
-    AppendToLog("Failed to create relaunch monitor thread.");
+    AppendToLog("Failed to create launch monitor thread.");
     if (process != INVALID_HANDLE_VALUE) CloseHandle(process);
     delete info;
   }
