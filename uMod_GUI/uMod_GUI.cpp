@@ -55,6 +55,18 @@ static wxString GetLogPath(void)
   return exe_path.GetPathWithSep() + "uMod_Reforged.log";
 }
 
+static wxString FormatWaitResult(DWORD wait_result)
+{
+  switch (wait_result)
+  {
+    case WAIT_OBJECT_0: return "WAIT_OBJECT_0";
+    case WAIT_TIMEOUT: return "WAIT_TIMEOUT";
+    case WAIT_ABANDONED: return "WAIT_ABANDONED";
+    case WAIT_FAILED: return "WAIT_FAILED";
+    default: return wxString::Format("WAIT_%lu", wait_result);
+  }
+}
+
 static void AppendToLog(const wxString &line)
 {
   wxString message = wxDateTime::Now().FormatISOCombined(' ');
@@ -151,12 +163,19 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
   if (info == NULL) return 0;
 
-  AppendToLog("Relaunch monitor started.");
+  AppendToLog(wxString::Format("Relaunch monitor started for %s", info->exe_path));
   DWORD wait = WaitForSingleObject(info->process, 3000);
+  DWORD wait_error = (wait == WAIT_FAILED) ? GetLastError() : 0;
   CloseHandle(info->process);
   info->process = INVALID_HANDLE_VALUE;
 
-  AppendToLog(wxString::Format("Relaunch monitor wait result: %lu", wait));
+  wxString wait_message = "Relaunch monitor wait result: ";
+  wait_message << FormatWaitResult(wait);
+  if (wait == WAIT_FAILED)
+  {
+    wait_message << " Error " << wait_error << ": " << FormatWindowsError(wait_error);
+  }
+  AppendToLog(wait_message);
   if (wait == WAIT_OBJECT_0)
   {
     HANDLE proc = INVALID_HANDLE_VALUE;
@@ -466,6 +485,10 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_line)
 {
   if (game_path.IsEmpty()) return -1;
+  if (command_line.IsEmpty())
+    AppendToLog("LaunchGame requested for " + game_path);
+  else
+    AppendToLog("LaunchGame requested for " + game_path + " " + command_line);
   wxString dll;
   if (!EnsureInjectedDllAvailable(dll))
   {
