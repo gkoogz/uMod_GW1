@@ -20,6 +20,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
+#include <Windows.h>
 #include <TlHelp32.h>
 #include <wx/filename.h>
 
