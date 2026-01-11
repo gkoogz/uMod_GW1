@@ -324,7 +324,7 @@ int uMod_Language::LoadDefault(void)
   Error_ProcessNotStarted = "The game could not be started.";
 
   Error_FileNotSupported = "This file type is not supported:\n";
-  Error_D3DX9NotFound = "The D3DX9_43.dll (32bit) is not available on your system.\nPlease install the newest DirectX End-User Runtime Installer.";
+  Error_D3DX9NotFound = "The D3DX9_43.dll (32bit) is not available on your system or next to uMod_Reforged.exe.\nPlease install the newest DirectX End-User Runtime Installer or place D3DX9_43.dll alongside uMod_Reforged.exe.";
   Error_DLLNotFound = "Could not load the dll.\nThe dll injection won't work.\nThis might happen if D3DX9_43.dll (32bit) is not installed on your system.\nPlease install the newest DirectX End-User Runtime Web Installer.";
   Error_FktNotFound = "Could not load function out of dll.\nThe dll injection won't work.";
   Error_AlreadyRunning = "Another instance of uMod_Reforged is already running.";

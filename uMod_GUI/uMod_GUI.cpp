@@ -192,12 +192,40 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   Show( true );
 
   {
-    HMODULE dll = LoadLibraryW( L"D3DX9_43.dll");
-    if (dll==NULL)
+    wchar_t module_path[MAX_PATH];
+    unsigned long module_len = GetModuleFileNameW(NULL, module_path, MAX_PATH);
+    if (module_len > 0 && module_len < MAX_PATH)
     {
-      wxMessageBox( Language->Error_D3DX9NotFound, "ERROR", wxOK|wxICON_ERROR);
+      for (unsigned long i = module_len; i > 0; --i)
+      {
+        if (module_path[i - 1] == L'\\' || module_path[i - 1] == L'/')
+        {
+          module_path[i] = 0;
+          break;
+        }
+      }
     }
-    else FreeLibrary(dll);
+    else
+    {
+      module_path[0] = 0;
+    }
+
+    wxString dll_name = "D3DX9_43.dll";
+    HMODULE dll = LoadLibraryW(dll_name.wc_str());
+    if (dll == NULL && module_path[0] != 0)
+    {
+      wxString dll_path = wxString(module_path) + dll_name;
+      dll = LoadLibraryW(dll_path.wc_str());
+    }
+
+    if (dll == NULL)
+    {
+      wxMessageBox(Language->Error_D3DX9NotFound, "ERROR", wxOK | wxICON_ERROR);
+    }
+    else
+    {
+      FreeLibrary(dll);
+    }
   }
 
   DeactivateGamesControl();
