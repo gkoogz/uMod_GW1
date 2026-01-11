@@ -20,6 +20,9 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 
+#include <TlHelp32.h>
+#include <wx/filename.h>
+
 #include "uMod_Main.h"
 
 namespace {
@@ -30,6 +33,32 @@ struct RelaunchInfo
   wxString dll_path;
   HANDLE process;
 };
+
+static DWORD FindChildProcessId(DWORD parent_pid, const wxString &expected_exe)
+{
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) return 0;
+
+  PROCESSENTRY32 entry = {0};
+  entry.dwSize = sizeof(PROCESSENTRY32);
+  DWORD child_pid = 0;
+  if (Process32First(snapshot, &entry))
+  {
+    do
+    {
+      if (entry.th32ParentProcessID != parent_pid) continue;
+      if (!expected_exe.IsEmpty())
+      {
+        wxString exe_name(entry.szExeFile);
+        if (!exe_name.IsSameAs(expected_exe, false)) continue;
+      }
+      child_pid = entry.th32ProcessID;
+      break;
+    } while (Process32Next(snapshot, &entry));
+  }
+  CloseHandle(snapshot);
+  return child_pid;
+}
 
 static wxString GetInjectedGamesPath(void)
 {
@@ -96,11 +125,44 @@ static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
   RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
   if (info == NULL) return 0;
 
-  DWORD wait = WaitForSingleObject(info->process, 3000);
+  DWORD parent_pid = GetProcessId(info->process);
+  wxString expected_exe = wxFileName(info->exe_path).GetFullName();
+  const DWORD timeout_ms = 30000;
+  const DWORD interval_ms = 200;
+
+  bool parent_exited = false;
+  for (DWORD elapsed = 0; elapsed < timeout_ms; elapsed += interval_ms)
+  {
+    DWORD child_pid = FindChildProcessId(parent_pid, expected_exe);
+    if (child_pid != 0)
+    {
+      const DWORD access = PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION |
+                           PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ;
+      HANDLE child = OpenProcess(access, FALSE, child_pid);
+      if (child != NULL)
+      {
+        Inject(child, info->dll_path.wc_str(), "Nothing");
+        CloseHandle(child);
+        CloseHandle(info->process);
+        info->process = INVALID_HANDLE_VALUE;
+        delete info;
+        return 0;
+      }
+    }
+
+    DWORD wait = WaitForSingleObject(info->process, 0);
+    if (wait == WAIT_OBJECT_0)
+    {
+      parent_exited = true;
+      break;
+    }
+    Sleep(interval_ms);
+  }
+
   CloseHandle(info->process);
   info->process = INVALID_HANDLE_VALUE;
 
-  if (wait == WAIT_OBJECT_0)
+  if (parent_exited)
   {
     HANDLE proc = INVALID_HANDLE_VALUE;
     if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
