@@ -49,6 +49,23 @@ static wxString FormatWindowsError(DWORD error_code)
   return message;
 }
 
+static wxString GetLogPath(void)
+{
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  return exe_path.GetPathWithSep() + "uMod_Reforged.log";
+}
+
+static void AppendToLog(const wxString &line)
+{
+  wxString message = wxDateTime::Now().FormatISOCombined(' ');
+  message << " " << line << "\n";
+  wxFile file;
+  if (!file.Open(GetLogPath(), wxFile::write_append)) file.Open(GetLogPath(), wxFile::write);
+  if (!file.IsOpened()) return;
+  file.Write(message);
+  file.Close();
+}
+
 static wxString GetInjectedGamesPath(void)
 {
   return GetReforgedAppDataPath("uMod_Reforged_DI_Games.txt");
@@ -100,7 +117,14 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
 
   bool result = CreateProcess(NULL, (wchar_t*) exe.wc_str(), NULL, NULL, FALSE,
                               CREATE_SUSPENDED, NULL, path.wc_str(), &si, &pi);
-  if (!result) return false;
+  if (!result)
+  {
+    DWORD error_code = GetLastError();
+    wxString message = "CreateProcess failed for: ";
+    message << game_path << "\nError " << error_code << ": " << FormatWindowsError(error_code);
+    AppendToLog(message);
+    return false;
+  }
 
   if (!Inject(pi.hProcess, dll_path.wc_str(), "Nothing"))
   {
@@ -108,6 +132,7 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
     wxString message = "Could not inject the uMod DLL into the game process.";
     message << "\nError " << error_code << ": " << FormatWindowsError(error_code);
     wxMessageBox(message, "ERROR", wxOK|wxICON_ERROR);
+    AppendToLog(message);
     TerminateProcess(pi.hProcess, 0);
     CloseHandle(pi.hThread);
     CloseHandle(pi.hProcess);
@@ -117,6 +142,7 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
   ResumeThread(pi.hThread);
   CloseHandle(pi.hThread);
   process = pi.hProcess;
+  AppendToLog(wxString::Format("Launched process %lu for %s", pi.dwProcessId, game_path));
   return true;
 }
 
@@ -439,6 +465,7 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
     wxString message = Language->Error_FileOpen;
     message << "\n" << GetInjectedDllPath();
     wxMessageBox( message, "ERROR",  wxOK|wxICON_ERROR);
+    AppendToLog("Failed to extract injected DLL: " + GetInjectedDllPath());
     return -1;
   }
 
