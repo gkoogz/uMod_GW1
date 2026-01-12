@@ -161,9 +161,21 @@ inline wxString GetReforgedAppDataDir(void)
   return dir.GetPath();
 }
 
+inline wxString GetReforgedInstallDir(void)
+{
+  wxFileName exe_path(wxStandardPaths::Get().GetExecutablePath());
+  return exe_path.GetPath();
+}
+
 inline wxString GetReforgedAppDataPath(const wxString &file_name)
 {
   wxFileName path(GetReforgedAppDataDir(), file_name);
+  return path.GetFullPath();
+}
+
+inline wxString GetReforgedInstallPath(const wxString &file_name)
+{
+  wxFileName path(GetReforgedInstallDir(), file_name);
   return path.GetFullPath();
 }
 
