@@ -38,7 +38,7 @@ static wxString GetInjectedGamesPath(void)
 
 static wxString GetInjectedDllPath(void)
 {
-  return GetReforgedAppDataPath(uMod_d3d9_DI_dll);
+  return GetReforgedInstallPath(uMod_d3d9_DI_dll);
 }
 
 static bool ExtractEmbeddedDll(const wxString &destination)
