@@ -21,6 +21,8 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/display.h>
+#include <algorithm>
 
 namespace {
 struct RelaunchInfo
@@ -30,6 +32,32 @@ struct RelaunchInfo
   wxString dll_path;
   HANDLE process;
 };
+
+static void EnsureFrameVisible(wxFrame *frame)
+{
+  if (frame == NULL) return;
+  wxRect frame_rect = frame->GetRect();
+  int display_count = wxDisplay::GetCount();
+  for (int i = 0; i < display_count; ++i)
+  {
+    wxDisplay display(i);
+    if (!display.IsOk()) continue;
+    if (display.GetGeometry().Intersects(frame_rect)) return;
+  }
+
+  if (display_count > 0)
+  {
+    wxDisplay display(0);
+    if (display.IsOk())
+    {
+      wxRect geometry = display.GetGeometry();
+      int width = std::min(frame_rect.GetWidth(), geometry.GetWidth());
+      int height = std::min(frame_rect.GetHeight(), geometry.GetHeight());
+      frame->SetSize(width, height);
+    }
+  }
+  frame->Centre();
+}
 
 static wxString GetInjectedGamesPath(void)
 {
@@ -189,6 +217,7 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   }
   GamePage->LoadLauncherSettings();
 
+  EnsureFrameVisible(this);
   Show( true );
 
   {

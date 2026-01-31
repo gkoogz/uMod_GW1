@@ -76,6 +76,7 @@ int uMod_Settings::Load(void)
   if (len == 0 || (len % 2) != 0)
   {
     file.Close();
+    wxRemoveFile(settings_path);
     reset_defaults();
     Save();
     return 0;
@@ -91,17 +92,35 @@ int uMod_Settings::Load(void)
   if (result != len)
   {
     delete [] buffer;
+    wxRemoveFile(settings_path);
     reset_defaults();
     Save();
     return 0;
   }
 
-  wchar_t *buff = (wchar_t*)buffer;
-  len/=2;
-  buff[len]=0;
-
   wxString content;
-  content =  buff;
+  bool looks_utf16 = false;
+  if (len % 2 == 0)
+  {
+    unsigned int zero_high = 0;
+    unsigned int pairs = len / 2;
+    for (unsigned int i=1; i<len; i+=2) if (buffer[i]==0) zero_high++;
+    if (pairs>0 && zero_high > (pairs * 7 / 10)) looks_utf16 = true;
+  }
+
+  if (looks_utf16)
+  {
+    wchar_t *buff = (wchar_t*)buffer;
+    len/=2;
+    buff[len]=0;
+    content = buff;
+  }
+  else
+  {
+    buffer[len]=0;
+    content = wxString::FromUTF8((const char*)buffer);
+    if (content.IsEmpty()) content = (const char*)buffer;
+  }
   delete [] buffer;
 
   wxStringTokenizer token( content, "\n");
