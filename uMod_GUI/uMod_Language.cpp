@@ -219,7 +219,13 @@ int uMod_Language::LoadLanguage(const wxString &name)
     CheckEntry( command, msg, CommandLineHint)
     CheckEntry( command, msg, TabLauncher)
     CheckEntry( command, msg, TabModMaker)
+    CheckEntry( command, msg, TabReset)
     CheckEntry( command, msg, LoadedMods)
+    CheckEntry( command, msg, ResetSettingsInfo)
+    CheckEntry( command, msg, ButtonResetSettings)
+    CheckEntry( command, msg, ResetSettingsConfirm)
+    CheckEntry( command, msg, ResetSettingsSuccess)
+    CheckEntry( command, msg, Error_ResetSettings)
     CheckEntry( command, msg, SelectLanguage)
     CheckEntry( command, msg, StartGame)
     CheckEntry( command, msg, CommandLine)
@@ -309,7 +315,13 @@ int uMod_Language::LoadDefault(void)
   CommandLineHint = "Command line arguments...";
   TabLauncher = "Launcher";
   TabModMaker = "Mod Maker";
+  TabReset = "Reset";
   LoadedMods = "Loaded Mods";
+  ResetSettingsInfo = "Click this to wipe any malformed settings";
+  ButtonResetSettings = "Reset settings";
+  ResetSettingsConfirm = "This will close running Guild Wars instances, wipe the uMod_Reforged appdata folder, and reset settings. Continue?";
+  ResetSettingsSuccess = "Settings were reset to defaults.";
+  Error_ResetSettings = "Failed to reset settings.";
 
   SelectLanguage = "Select a language.";
 

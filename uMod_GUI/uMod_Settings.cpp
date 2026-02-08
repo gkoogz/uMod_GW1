@@ -24,10 +24,10 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 uMod_Settings::uMod_Settings(void)
 {
-  XSize = 600;
+  XSize = 500;
   YSize = 400;
-  XPos = -1;
-  YPos = -1;
+  XPos = 400;
+  YPos = 400;
   Language = "English";
 }
 
@@ -50,10 +50,10 @@ int uMod_Settings::Load(void)
 {
   wxFile file;
   auto reset_defaults = [this]() {
-    XSize = 600;
+    XSize = 500;
     YSize = 400;
-    XPos = -1;
-    YPos = -1;
+    XPos = 400;
+    YPos = 400;
     Language = "English";
   };
 

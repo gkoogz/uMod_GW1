@@ -56,9 +56,11 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
 
   LauncherPanel = new wxScrolledWindow( Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL);
   ModMakerPanel = new wxScrolledWindow( Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL);
+  ResetPanel = new wxScrolledWindow( Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxVSCROLL);
 
   LauncherSizer = new wxBoxSizer(wxVERTICAL);
   ModMakerSizer = new wxBoxSizer(wxVERTICAL);
+  ResetSizer = new wxBoxSizer(wxVERTICAL);
 
   const wxSize launcher_button_size(200, 28);
   const wxSize launch_button_size(200, 56);
@@ -186,6 +188,17 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   SavePackageButton = new wxButton(ModMakerPanel, wxID_ANY, Language->ButtonSavePackage, wxDefaultPosition, wxSize(160, 28));
   ModMakerSizer->Add(SavePackageButton, 0, wxTOP, 8);
 
+  ResetInfoText = new wxStaticText(ResetPanel, wxID_ANY, Language->ResetSettingsInfo);
+  ResetSizer->Add(ResetInfoText, 0, wxBOTTOM, 10);
+  ResetSettingsButton = new wxButton(ResetPanel, wxID_ANY, Language->ButtonResetSettings, wxDefaultPosition, wxSize(180, 30));
+  ResetSettingsButton->SetBackgroundColour(wxColour(200, 0, 0));
+  ResetSettingsButton->SetForegroundColour(*wxWHITE);
+  ResetSizer->Add(ResetSettingsButton, 0, wxALIGN_LEFT, 0);
+
+  ResetPanel->SetSizer(ResetSizer);
+  ResetPanel->SetScrollRate(0, 20);
+  ResetSizer->FitInside(ResetPanel);
+
   NumberOfEntry = 0;
   MaxNumberOfEntry = 1024;
   if (GetMemory( CheckBoxes, MaxNumberOfEntry)) {LastError = Language->Error_Memory; return;}
@@ -202,6 +215,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
 
   Notebook->AddPage( LauncherPanel, Language->TabLauncher, true);
   Notebook->AddPage( ModMakerPanel, Language->TabModMaker, false);
+  Notebook->AddPage( ResetPanel, Language->TabReset, false);
 
   SetSizer(MainSizer);
 
@@ -209,6 +223,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
   Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSavePackage, this, SavePackageButton->GetId());
+  Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonResetSettings, this, ResetSettingsButton->GetId());
   UpdateLaunchState();
   LoadDefaultModsList();
   if (LoadDefaultMods->GetValue()) ApplyDefaultMods();
@@ -310,6 +325,21 @@ void uMod_GamePage::OnModCheck(wxCommandEvent& WXUNUSED(event))
 void uMod_GamePage::OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event))
 {
   SaveDefaultModsState();
+}
+
+void uMod_GamePage::OnButtonResetSettings(wxCommandEvent& WXUNUSED(event))
+{
+  if (MainFrame==NULL) return;
+  int answer = wxMessageBox(Language->ResetSettingsConfirm, "uMod_Reforged", wxYES_NO|wxICON_WARNING, this);
+  if (answer != wxYES) return;
+
+  if (MainFrame->ResetReforgedState())
+  {
+    wxMessageBox(Language->Error_ResetSettings, "ERROR", wxOK|wxICON_ERROR, this);
+    return;
+  }
+
+  wxMessageBox(Language->ResetSettingsSuccess, "uMod_Reforged", wxOK|wxICON_INFORMATION, this);
 }
 
 int uMod_GamePage::LoadDefaultModsList(void)
@@ -1118,6 +1148,7 @@ int uMod_GamePage::UpdateLanguage(void)
 {
   Notebook->SetPageText( 0, Language->TabLauncher);
   Notebook->SetPageText( 1, Language->TabModMaker);
+  Notebook->SetPageText( 2, Language->TabReset);
   LaunchButton->SetLabel( Language->ButtonLaunch);
   LocateExeButton->SetLabel( Language->ButtonLocateExe);
   CommandLine->SetHint( Language->CommandLineHint);
@@ -1147,6 +1178,8 @@ int uMod_GamePage::UpdateLanguage(void)
   if (PackageNameLabel!=NULL) PackageNameLabel->SetLabel( Language->PackageNameLabel);
   if (PackageAuthorLabel!=NULL) PackageAuthorLabel->SetLabel( Language->PackageAuthorLabel);
   if (SavePackageButton!=NULL) SavePackageButton->SetLabel( Language->ButtonSavePackage);
+  if (ResetInfoText!=NULL) ResetInfoText->SetLabel( Language->ResetSettingsInfo);
+  if (ResetSettingsButton!=NULL) ResetSettingsButton->SetLabel( Language->ButtonResetSettings);
   wxString temp = Language->TextCtrlSavePath;
   temp << Game.GetSavePath();
   SavePath->SetValue( temp);

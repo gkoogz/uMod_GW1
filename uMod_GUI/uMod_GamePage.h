@@ -66,6 +66,7 @@ private:
   void SetExePath(const wxString &path);
   void OnModCheck(wxCommandEvent& WXUNUSED(event));
   void OnToggleLoadDefaultMods(wxCommandEvent& WXUNUSED(event));
+  void OnButtonResetSettings(wxCommandEvent& WXUNUSED(event));
   int LoadDefaultModsList(void);
   int SaveDefaultModsList(void);
   int LoadDefaultModsState(void);
@@ -106,6 +107,7 @@ private:
   wxNotebook *Notebook;
   wxScrolledWindow *LauncherPanel;
   wxScrolledWindow *ModMakerPanel;
+  wxScrolledWindow *ResetPanel;
 
   wxButton *LaunchButton;
   wxTextCtrl *CommandLine;
@@ -128,6 +130,10 @@ private:
   wxTextCtrl *PackageName;
   wxTextCtrl *PackageAuthor;
   wxButton *SavePackageButton;
+
+  wxStaticText *ResetInfoText;
+  wxButton *ResetSettingsButton;
+  wxBoxSizer *ResetSizer;
 
   wxBoxSizer **CheckBoxHSizers;
   wxButton **CheckButtonUp;
