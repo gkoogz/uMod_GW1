@@ -33,6 +33,7 @@ public:
   int GetInjectedGames( wxArrayString &games, wxArrayString &cmd);
   int SetInjectedGames( wxArrayString &games, wxArrayString &cmd);
   int LaunchGame(const wxString &game_path, const wxString &command_line);
+  int ResetReforgedState(void);
   bool IsGameActive(void) const;
 
 

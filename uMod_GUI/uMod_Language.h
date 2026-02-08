@@ -74,7 +74,13 @@ public:
   wxString CommandLineHint;
   wxString TabLauncher;
   wxString TabModMaker;
+  wxString TabReset;
   wxString LoadedMods;
+  wxString ResetSettingsInfo;
+  wxString ButtonResetSettings;
+  wxString ResetSettingsConfirm;
+  wxString ResetSettingsSuccess;
+  wxString Error_ResetSettings;
 
   wxString SelectLanguage;
 

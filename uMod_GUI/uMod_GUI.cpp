@@ -23,6 +23,7 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "uMod_Main.h"
 #include <wx/display.h>
 #include <algorithm>
+#include <tlhelp32.h>
 
 namespace {
 struct RelaunchInfo
@@ -66,7 +67,7 @@ static wxString GetInjectedGamesPath(void)
 
 static wxString GetInjectedDllPath(void)
 {
-  return GetReforgedInstallPath(uMod_d3d9_DI_dll);
+  return GetReforgedAppDataPath(uMod_d3d9_DI_dll);
 }
 
 static bool ExtractEmbeddedDll(const wxString &destination)
@@ -94,6 +95,37 @@ static bool EnsureInjectedDllAvailable(wxString &dll_path)
   if (wxFile::Access(dll_path, wxFile::read)) return true;
   GetReforgedAppDataDir();
   return ExtractEmbeddedDll(dll_path);
+}
+
+static bool TerminateProcessesByName(const wchar_t *process_name)
+{
+  if (process_name == NULL || process_name[0] == 0) return false;
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if (snapshot == INVALID_HANDLE_VALUE) return false;
+
+  PROCESSENTRY32W entry = {0};
+  entry.dwSize = sizeof(PROCESSENTRY32W);
+  bool terminated = false;
+
+  if (Process32FirstW(snapshot, &entry))
+  {
+    do
+    {
+      if (_wcsicmp(entry.szExeFile, process_name) == 0)
+      {
+        HANDLE process = OpenProcess(PROCESS_TERMINATE, FALSE, entry.th32ProcessID);
+        if (process != NULL)
+        {
+          if (TerminateProcess(process, 0)) terminated = true;
+          CloseHandle(process);
+        }
+      }
+    }
+    while (Process32NextW(snapshot, &entry));
+  }
+
+  CloseHandle(snapshot);
+  return terminated;
 }
 
 static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line, const wxString &dll_path, HANDLE &process)
@@ -433,6 +465,24 @@ void uMod_Frame::OnButtonReload(wxCommandEvent& WXUNUSED(event))
 }
 
 
+
+
+int uMod_Frame::ResetReforgedState(void)
+{
+  TerminateProcessesByName(L"gw.exe");
+
+  wxString app_data_dir = GetReforgedAppDataDir();
+  wxFileName::Rmdir(app_data_dir, wxPATH_RMDIR_RECURSIVE);
+  wxFileName dir(app_data_dir, "");
+  if (!dir.DirExists()) dir.Mkdir(wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+
+  wxString dll;
+  if (!EnsureInjectedDllAvailable(dll)) return -1;
+
+  uMod_Settings default_settings;
+  if (default_settings.Save()) return -1;
+  return 0;
+}
 
 
 int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_line)
