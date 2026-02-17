@@ -222,7 +222,7 @@ bool MyApp::OnInit(void)
 
 
 uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
-       : wxFrame((wxFrame *)NULL, -1, title, wxPoint(set.XPos,set.YPos), wxSize(set.XSize,set.YSize)), Settings(set)
+       : wxFrame((wxFrame *)NULL, -1, title, wxPoint(set.XPos,set.YPos), wxDefaultSize), Settings(set)
 {
   SetIcon(wxICON(MAINICON));
 
@@ -239,6 +239,7 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
 
 
   SetSizer( MainSizer);
+  SetClientSize(set.XSize, set.YSize);
 
   NumberOfGames = 0;
   MaxNumberOfGames  = 10;
@@ -277,8 +278,11 @@ uMod_Frame::~uMod_Frame(void)
   if (Clients!=NULL) delete [] Clients;
 
   Settings.Language = Language->GetCurrentLanguage();
-  GetSize( &Settings.XSize, &Settings.YSize);
-  GetPosition( &Settings.XPos, &Settings.YPos);
+  if (!IsMaximized() && !IsIconized())
+  {
+    GetClientSize( &Settings.XSize, &Settings.YSize);
+    GetPosition( &Settings.XPos, &Settings.YPos);
+  }
   Settings.Save();
 }
 
