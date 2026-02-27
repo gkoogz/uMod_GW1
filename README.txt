@@ -1,3 +1,24 @@
+uMod Reforged
+=============
+
+uMod Reforged is a modern revival of the classic uMod texture modding tool for Guild Wars. This project keeps the original spirit of lightweight texture injection while making the day-to-day experience far more dependable on modern systems.
+
+Highlights in this refreshed version include:
+- Updated interface for a cleaner, more approachable workflow.
+- Steam compatibility so Guild Wars players can launch and mod through current distribution platforms.
+- Broad bug fixes that address long-standing rough edges and reduce unexpected behavior.
+- UI enhancements that improve clarity and reduce setup friction.
+- Stability improvements aimed at more consistent sessions and fewer crashes.
+- A reset button that clears corrupted settings and force-quits corrupted Guild Wars processes, making recovery from bad states fast and reliable.
+
+Whether you are coming back to Guild Wars after years away or maintaining a long-running setup, uMod Reforged is focused on preserving compatibility while improving usability.
+
+
+========================
+LEGACY README (ARCHIVED)
+========================
+The content below is preserved from the legacy project documentation.
+
 The licence is set for each file separately.
 
 
