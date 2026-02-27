@@ -37,27 +37,74 @@ struct RelaunchInfo
 static void EnsureFrameVisible(wxFrame *frame)
 {
   if (frame == NULL) return;
-  wxRect frame_rect = frame->GetRect();
+
+  const int fallback_size = 500;
+  const int fallback_offset_x = 300;
+  const int fallback_offset_y = 300;
+
   int display_count = wxDisplay::GetCount();
+  if (display_count <= 0)
+  {
+    frame->SetSize(fallback_offset_x, fallback_offset_y, fallback_size, fallback_size);
+    return;
+  }
+
+  wxRect frame_rect = frame->GetRect();
+  int best_display = 0;
+  int best_area = -1;
   for (int i = 0; i < display_count; ++i)
   {
     wxDisplay display(i);
     if (!display.IsOk()) continue;
-    if (display.GetGeometry().Intersects(frame_rect)) return;
-  }
-
-  if (display_count > 0)
-  {
-    wxDisplay display(0);
-    if (display.IsOk())
+    wxRect geometry = display.GetClientArea();
+    wxRect intersection = geometry.Intersect(frame_rect);
+    int area = intersection.GetWidth() * intersection.GetHeight();
+    if (area > best_area)
     {
-      wxRect geometry = display.GetGeometry();
-      int width = std::min(frame_rect.GetWidth(), geometry.GetWidth());
-      int height = std::min(frame_rect.GetHeight(), geometry.GetHeight());
-      frame->SetSize(width, height);
+      best_area = area;
+      best_display = i;
     }
   }
-  frame->Centre();
+
+  wxDisplay display(best_display);
+  if (!display.IsOk())
+  {
+    frame->SetSize(fallback_offset_x, fallback_offset_y, fallback_size, fallback_size);
+    return;
+  }
+
+  wxRect geometry = display.GetClientArea();
+  int width = frame_rect.GetWidth();
+  int height = frame_rect.GetHeight();
+  int x = frame_rect.GetX();
+  int y = frame_rect.GetY();
+
+  bool suspicious_restore = (best_area <= 0);
+  suspicious_restore = suspicious_restore || (width >= geometry.GetWidth() - 8);
+  suspicious_restore = suspicious_restore || (height >= geometry.GetHeight() - 8);
+  suspicious_restore = suspicious_restore || (width < 200 || height < 200);
+
+  if (suspicious_restore)
+  {
+    width = fallback_size;
+    height = fallback_size;
+    x = geometry.GetX() + fallback_offset_x;
+    y = geometry.GetY() + fallback_offset_y;
+  }
+
+  if (width > geometry.GetWidth()) width = geometry.GetWidth();
+  if (height > geometry.GetHeight()) height = geometry.GetHeight();
+  if (width < 200) width = 200;
+  if (height < 200) height = 200;
+
+  int max_x = geometry.GetRight() - width + 1;
+  int max_y = geometry.GetBottom() - height + 1;
+  if (x < geometry.GetX()) x = geometry.GetX();
+  if (y < geometry.GetY()) y = geometry.GetY();
+  if (x > max_x) x = max_x;
+  if (y > max_y) y = max_y;
+
+  frame->SetSize(x, y, width, height);
 }
 
 static wxString GetInjectedGamesPath(void)
@@ -277,8 +324,11 @@ uMod_Frame::~uMod_Frame(void)
   if (Clients!=NULL) delete [] Clients;
 
   Settings.Language = Language->GetCurrentLanguage();
-  GetSize( &Settings.XSize, &Settings.YSize);
-  GetPosition( &Settings.XPos, &Settings.YPos);
+  if (!IsMaximized() && !IsIconized() && !IsFullScreen())
+  {
+    GetSize( &Settings.XSize, &Settings.YSize);
+    GetPosition( &Settings.XPos, &Settings.YPos);
+  }
   Settings.Save();
 }
 
