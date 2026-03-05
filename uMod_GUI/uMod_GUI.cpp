@@ -38,6 +38,10 @@ static void EnsureFrameVisible(wxFrame *frame)
 {
   if (frame == NULL) return;
 
+  if (frame->IsFullScreen()) frame->ShowFullScreen(false);
+  if (frame->IsMaximized()) frame->Maximize(false);
+  if (frame->IsIconized()) frame->Iconize(false);
+
   const int fallback_size = 500;
   const int fallback_offset_x = 300;
   const int fallback_offset_y = 300;
@@ -296,8 +300,8 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   }
   GamePage->LoadLauncherSettings();
 
-  EnsureFrameVisible(this);
   Show( true );
+  EnsureFrameVisible(this);
 
   {
     HMODULE dll = LoadLibraryW( L"D3DX9_43.dll");
