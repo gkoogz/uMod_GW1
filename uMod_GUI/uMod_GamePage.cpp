@@ -580,24 +580,22 @@ void uMod_GamePage::RefreshSavedTextures(void)
     return;
   }
 
-  wxDir dir(path);
-  if (!dir.IsOpened())
+  wxArrayString files;
+  if (wxDir::GetAllFiles(path, &files, "*.dds", wxDIR_FILES) == 0)
   {
     SavedTexturesList->Append(Language->SavedTexturesEmpty);
     UpdateSavedTexturesListSize();
     return;
   }
-
-  wxString filename;
-  bool cont = dir.GetFirst(&filename, "*.dds", wxDIR_FILES);
-  while (cont)
+  files.Sort();
+  for (unsigned int i=0; i<files.GetCount(); i++)
   {
-    wxFileName full_path(path, filename);
+    wxFileName full_path(files[i]);
     wxString file_path = full_path.GetFullPath();
-    int item = SavedTexturesList->Append(filename);
+    wxString display_name = full_path.GetFullName();
+    int item = SavedTexturesList->Append(display_name);
     SavedTextureFiles.Add(file_path);
     SavedTexturesList->Check(item, true);
-    cont = dir.GetNext(&filename);
   }
 
   if (SavedTextureFiles.IsEmpty())
@@ -631,6 +629,9 @@ bool uMod_GamePage::ExtractTextureHash(const wxString &file_name, unsigned long 
   wxString base = name.GetFullName();
   wxString hash_part = base.AfterLast('_');
   hash_part = hash_part.BeforeLast('.');
+  if (hash_part.StartsWith("0x") || hash_part.StartsWith("0X")) hash_part = hash_part.Mid(2);
+  hash_part.Trim(true);
+  hash_part.Trim(false);
   return hash_part.ToULong(&hash, 16);
 }
 
@@ -688,18 +689,6 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     return -1;
   }
 
-  if (!name.IsEmpty() || !author.IsEmpty())
-  {
-    wxString comment = name;
-    if (!author.IsEmpty())
-    {
-      if (!comment.IsEmpty()) comment << "\n";
-      comment << Language->Author << author;
-    }
-    wxCharBuffer comment_buffer = comment.ToUTF8();
-    ZipAdd(zip_handle, L"Comment.txt", (void*)comment_buffer.data(), comment_buffer.length());
-  }
-
   CloseZip(zip_handle);
 
   wxFile zip_file;
@@ -740,9 +729,16 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
     return -1;
   }
 
-  wxCharBuffer author_buffer = author.ToUTF8();
-  unsigned long author_len = author_buffer.length();
-  unsigned long total_len = zip_len + 1 + author_len;
+  wxString trailer_text;
+  if (!author.IsEmpty()) trailer_text << author;
+  if (!name.IsEmpty())
+  {
+    if (!trailer_text.IsEmpty()) trailer_text << "\n";
+    trailer_text << name;
+  }
+  wxCharBuffer trailer_buffer = trailer_text.ToUTF8();
+  unsigned long trailer_len = trailer_buffer.length();
+  unsigned long total_len = zip_len + trailer_len;
   char *tpf_buffer = NULL;
   try {tpf_buffer = new char[total_len];}
   catch (...) {tpf_buffer = NULL;}
@@ -754,8 +750,36 @@ int uMod_GamePage::CreateTpfPackage(const wxString &output_path, const wxArraySt
   }
 
   memcpy(tpf_buffer, zip_buffer, zip_len);
-  tpf_buffer[zip_len] = 0;
-  if (author_len>0) memcpy(tpf_buffer + zip_len + 1, author_buffer.data(), author_len);
+  if (trailer_len>0)
+  {
+    // TexMod stores author/description in the ZIP archive comment.
+    // Rebuild that EOCD comment field rather than appending raw trailing bytes.
+    static const unsigned char eocd_signature[] = {0x50, 0x4B, 0x05, 0x06};
+    long eocd_pos = -1;
+    for (long i=(long)zip_len-22; i>=0; i--)
+    {
+      if ((unsigned char)tpf_buffer[i+0]==eocd_signature[0] &&
+          (unsigned char)tpf_buffer[i+1]==eocd_signature[1] &&
+          (unsigned char)tpf_buffer[i+2]==eocd_signature[2] &&
+          (unsigned char)tpf_buffer[i+3]==eocd_signature[3])
+      {
+        eocd_pos = i;
+        break;
+      }
+    }
+
+    if (eocd_pos<0 || (unsigned long)(eocd_pos+22)>zip_len)
+    {
+      delete [] zip_buffer;
+      delete [] tpf_buffer;
+      LastError = Language->Error_SaveFile;
+      return -1;
+    }
+
+    tpf_buffer[eocd_pos+20] = (char)(trailer_len & 0xFFu);
+    tpf_buffer[eocd_pos+21] = (char)((trailer_len >> 8) & 0xFFu);
+    memcpy(tpf_buffer + zip_len, trailer_buffer.data(), trailer_len);
+  }
   delete [] zip_buffer;
 
   unsigned int *buff = (unsigned int*) tpf_buffer;

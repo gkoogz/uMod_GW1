@@ -162,14 +162,12 @@ void ExitInstance()
   }
   if (gl_ServerThread!=NULL)
   {
-    CloseHandle(gl_ServerThread); // kill the server thread
+    // Closing the handle does not stop the thread. Avoid deleting gl_TextureServer
+    // from DllMain while the worker may still be unwinding from ReadFile().
+    CloseHandle(gl_ServerThread);
     gl_ServerThread = NULL;
   }
-  if (gl_TextureServer!=NULL)
-  {
-    delete gl_TextureServer; //delete the texture server
-    gl_TextureServer = NULL;
-  }
+  gl_TextureServer = NULL;
 
   // Release the system's d3d9.dll
   if (gl_hOriginalDll!=NULL)
