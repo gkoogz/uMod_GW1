@@ -33,6 +33,27 @@ static wxString GetDefaultModsStatePath(void)
   return GetReforgedAppDataPath("uMod_Reforged_DefaultModsEnabled.txt");
 }
 
+static wxString SuggestPackageNameFromContext(const wxString &save_path, const wxString &exe_name)
+{
+  wxString suggested;
+  if (!save_path.IsEmpty())
+  {
+    wxFileName path_name(save_path);
+    if (!path_name.GetDirs().IsEmpty()) suggested = path_name.GetDirs().Last();
+    if (suggested.IsEmpty()) suggested = path_name.GetName();
+    if (suggested.IsEmpty()) suggested = path_name.GetFullName();
+  }
+  if (suggested.IsEmpty() && !exe_name.IsEmpty())
+  {
+    wxFileName exe_file(exe_name);
+    suggested = exe_file.GetName();
+  }
+  if (suggested.IsEmpty()) suggested = "texture_pack";
+  suggested.Replace("_", " ");
+  suggested.Replace("-", " ");
+  return suggested;
+}
+
 
 uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxString &save, PipeStruct &pipe, uMod_Frame *frame)
   : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize), Sender(pipe)
@@ -104,76 +125,100 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   LauncherPanel->SetScrollRate(0, 20);
   LauncherSizer->FitInside(LauncherPanel);
 
+  wxStaticText *modMakerIntro = new wxStaticText(
+    ModMakerPanel,
+    wxID_ANY,
+    "Capture textures to a folder, edit the DDS files, then bundle the ones you want into a TexMod .tpf package.");
+  modMakerIntro->SetForegroundColour(wxColour(90, 90, 90));
+  ModMakerSizer->Add( modMakerIntro, 0, wxEXPAND | wxBOTTOM, 10);
+
+  wxBoxSizer *stepsRow = new wxBoxSizer(wxHORIZONTAL);
+  wxStaticText *stepOne = new wxStaticText(ModMakerPanel, wxID_ANY, "1. Capture");
+  wxStaticText *stepTwo = new wxStaticText(ModMakerPanel, wxID_ANY, "2. Edit DDS");
+  wxStaticText *stepThree = new wxStaticText(ModMakerPanel, wxID_ANY, "3. Build TPF");
+  stepOne->SetForegroundColour(wxColour(0, 95, 155));
+  stepTwo->SetForegroundColour(wxColour(0, 95, 155));
+  stepThree->SetForegroundColour(wxColour(0, 95, 155));
+  stepsRow->Add( stepOne, 0, wxRIGHT, 18);
+  stepsRow->Add( stepTwo, 0, wxRIGHT, 18);
+  stepsRow->Add( stepThree, 0, 0, 0);
+  ModMakerSizer->Add( stepsRow, 0, wxBOTTOM, 10);
+
+  wxStaticBoxSizer *captureSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, "Capture Setup");
   wxBoxSizer *savePathRow = new wxBoxSizer(wxHORIZONTAL);
-  DirectoryButton = new wxButton( ModMakerPanel, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(180,24));
+  DirectoryButton = new wxButton( ModMakerPanel, ID_Button_Path, Language->ButtonDirectory, wxDefaultPosition, wxSize(180,28));
   SavePath = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextCtrlSavePath, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   savePathRow->Add( (wxWindow*) DirectoryButton, 0, wxRIGHT, 10);
   savePathRow->Add( (wxWindow*) SavePath, 1, wxEXPAND, 0);
-  ModMakerSizer->Add( savePathRow, 0, wxEXPAND, 0);
-  ModMakerSizer->AddSpacer(10);
+  captureSizer->Add( savePathRow, 0, wxEXPAND | wxBOTTOM, 10);
 
-  const wxSize key_button_size(180, 24);
-  wxBoxSizer *keyBackRow = new wxBoxSizer(wxHORIZONTAL);
-  KeyBackButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyBack, wxDefaultPosition, key_button_size);
+  wxFlexGridSizer *keyGrid = new wxFlexGridSizer(3, 2, 8, 10);
+  keyGrid->AddGrowableCol(1, 1);
+  KeyBackButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyBack, wxDefaultPosition, wxSize(180, 28));
   ChoiceKeyBack = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  keyBackRow->Add( (wxWindow*) KeyBackButton, 0, wxRIGHT, 10);
-  keyBackRow->Add( (wxWindow*) ChoiceKeyBack, 1, wxEXPAND, 0);
-  ModMakerSizer->Add( keyBackRow, 0, wxEXPAND | wxBOTTOM, 6);
-
-  wxBoxSizer *keySaveRow = new wxBoxSizer(wxHORIZONTAL);
-  KeySaveButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeySave, wxDefaultPosition, key_button_size);
+  keyGrid->Add( (wxWindow*) KeyBackButton, 0, wxALIGN_CENTER_VERTICAL, 0);
+  keyGrid->Add( (wxWindow*) ChoiceKeyBack, 1, wxEXPAND, 0);
+  KeySaveButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeySave, wxDefaultPosition, wxSize(180, 28));
   ChoiceKeySave = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  keySaveRow->Add( (wxWindow*) KeySaveButton, 0, wxRIGHT, 10);
-  keySaveRow->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
-  ModMakerSizer->Add( keySaveRow, 0, wxEXPAND | wxBOTTOM, 6);
-
-  wxBoxSizer *keyNextRow = new wxBoxSizer(wxHORIZONTAL);
-  KeyNextButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyNext, wxDefaultPosition, key_button_size);
+  keyGrid->Add( (wxWindow*) KeySaveButton, 0, wxALIGN_CENTER_VERTICAL, 0);
+  keyGrid->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
+  KeyNextButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyNext, wxDefaultPosition, wxSize(180, 28));
   ChoiceKeyNext = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  keyNextRow->Add( (wxWindow*) KeyNextButton, 0, wxRIGHT, 10);
-  keyNextRow->Add( (wxWindow*) ChoiceKeyNext, 1, wxEXPAND, 0);
-  ModMakerSizer->Add( keyNextRow, 0, wxEXPAND, 0);
-
+  keyGrid->Add( (wxWindow*) KeyNextButton, 0, wxALIGN_CENTER_VERTICAL, 0);
+  keyGrid->Add( (wxWindow*) ChoiceKeyNext, 1, wxEXPAND, 0);
+  captureSizer->Add( keyGrid, 0, wxEXPAND | wxBOTTOM, 10);
 
   FontColourSizer = new wxBoxSizer(wxHORIZONTAL);
   FontColour[0] = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->FontColour, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   FontColour[1] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "255", wxDefaultPosition, wxDefaultSize);
   FontColour[2] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize);
   FontColour[3] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize);
-  for (int i=0; i<4; i++) FontColourSizer->Add( (wxWindow*) FontColour[i], 1, wxEXPAND, 0);
+  for (int i=0; i<4; i++) FontColourSizer->Add( (wxWindow*) FontColour[i], 1, wxEXPAND, i==0 ? 0 : 0);
 
   TextureColourSizer = new wxBoxSizer(wxHORIZONTAL);
   TextureColour[0] = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextureColour, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   TextureColour[1] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize);
   TextureColour[2] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "255", wxDefaultPosition, wxDefaultSize);
   TextureColour[3] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize);
-  for (int i=0; i<4; i++) TextureColourSizer->Add( (wxWindow*) TextureColour[i], 1, wxEXPAND, 0);
+  for (int i=0; i<4; i++) TextureColourSizer->Add( (wxWindow*) TextureColour[i], 1, wxEXPAND, i==0 ? 0 : 0);
 
-
-  ModMakerSizer->Add( FontColourSizer, 0, wxEXPAND, 0);
-  ModMakerSizer->Add( TextureColourSizer, 0, wxEXPAND, 0);
+  captureSizer->Add( FontColourSizer, 0, wxEXPAND | wxBOTTOM, 6);
+  captureSizer->Add( TextureColourSizer, 0, wxEXPAND | wxBOTTOM, 10);
 
   SaveSingleTexture = new wxCheckBox( ModMakerPanel, -1, Language->CheckBoxSaveSingleTexture);
-  ModMakerSizer->Add( (wxWindow*) SaveSingleTexture, 0, wxEXPAND, 0);
-
+  captureSizer->Add( (wxWindow*) SaveSingleTexture, 0, wxEXPAND | wxBOTTOM, 4);
   SaveAllTextures = new wxCheckBox( ModMakerPanel, -1, Language->CheckBoxSaveAllTextures);
-  ModMakerSizer->Add( (wxWindow*) SaveAllTextures, 0, wxEXPAND, 0);
+  captureSizer->Add( (wxWindow*) SaveAllTextures, 0, wxEXPAND | wxBOTTOM, 10);
 
   wxBoxSizer *updateRow = new wxBoxSizer(wxHORIZONTAL);
-  UpdateButton = new wxButton( ModMakerPanel, ID_Button_Update, Language->ButtonUpdate, wxDefaultPosition, wxSize(140,24));
-  ReloadButton = new wxButton( ModMakerPanel, ID_Button_Reload, Language->ButtonReload, wxDefaultPosition, wxSize(140,24));
+  UpdateButton = new wxButton( ModMakerPanel, ID_Button_Update, Language->ButtonUpdate, wxDefaultPosition, wxSize(150,28));
+  ReloadButton = new wxButton( ModMakerPanel, ID_Button_Reload, Language->ButtonReload, wxDefaultPosition, wxSize(150,28));
   updateRow->Add( (wxWindow*) UpdateButton, 0, wxRIGHT, 10);
-  updateRow->Add( (wxWindow*) ReloadButton, 0, wxEXPAND, 0);
-  ModMakerSizer->Add( updateRow, 0, wxEXPAND, 0);
+  updateRow->Add( (wxWindow*) ReloadButton, 0, 0, 0);
+  captureSizer->Add( updateRow, 0, wxALIGN_LEFT, 0);
+  ModMakerSizer->Add(captureSizer, 0, wxEXPAND | wxBOTTOM, 10);
 
-  ModMakerSizer->AddSpacer(10);
-
+  wxStaticBoxSizer *builderSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, "Package Builder");
   SavedTexturesSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, Language->SavedTexturesHeader);
+  wxBoxSizer *textureActions = new wxBoxSizer(wxHORIZONTAL);
+  RefreshTexturesButton = new wxButton(ModMakerPanel, ID_Button_RefreshTextures, "Refresh List", wxDefaultPosition, wxSize(120, 26));
+  OpenSaveFolderButton = new wxButton(ModMakerPanel, ID_Button_OpenSaveFolder, "Open Folder", wxDefaultPosition, wxSize(110, 26));
+  SelectAllTexturesButton = new wxButton(ModMakerPanel, ID_Button_SelectAllTextures, "Select All", wxDefaultPosition, wxSize(100, 26));
+  ClearTextureSelectionButton = new wxButton(ModMakerPanel, ID_Button_ClearTextureSelection, "Clear Selection", wxDefaultPosition, wxSize(120, 26));
+  textureActions->Add( RefreshTexturesButton, 0, wxRIGHT, 8);
+  textureActions->Add( OpenSaveFolderButton, 0, wxRIGHT, 12);
+  textureActions->Add( SelectAllTexturesButton, 0, wxRIGHT, 8);
+  textureActions->Add( ClearTextureSelectionButton, 0, 0, 0);
+  SavedTexturesSizer->Add(textureActions, 0, wxBOTTOM, 8);
   SavedTexturesList = new wxCheckListBox(ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize);
   SavedTexturesSizer->Add(SavedTexturesList, 0, wxEXPAND, 0);
-  ModMakerSizer->Add(SavedTexturesSizer, 0, wxEXPAND, 0);
+  SavedTexturesSummaryText = new wxStaticText(ModMakerPanel, wxID_ANY, "");
+  SavedTexturesSummaryText->SetForegroundColour(wxColour(90, 90, 90));
+  SavedTexturesSizer->Add(SavedTexturesSummaryText, 0, wxTOP, 6);
+  builderSizer->Add(SavedTexturesSizer, 0, wxEXPAND | wxBOTTOM, 10);
 
   wxFlexGridSizer *packageSizer = new wxFlexGridSizer(2, 2, 8, 10);
+  packageSizer->AddGrowableCol(1, 1);
   PackageNameLabel = new wxStaticText(ModMakerPanel, wxID_ANY, Language->PackageNameLabel);
   packageSizer->Add(PackageNameLabel, 0, wxALIGN_CENTER_VERTICAL, 0);
   PackageName = new wxTextCtrl(ModMakerPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
@@ -182,11 +227,18 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   packageSizer->Add(PackageAuthorLabel, 0, wxALIGN_CENTER_VERTICAL, 0);
   PackageAuthor = new wxTextCtrl(ModMakerPanel, wxID_ANY, "", wxDefaultPosition, wxDefaultSize);
   packageSizer->Add(PackageAuthor, 1, wxEXPAND, 0);
-  packageSizer->AddGrowableCol(1, 1);
-  ModMakerSizer->Add(packageSizer, 0, wxEXPAND | wxTOP, 8);
+  builderSizer->Add(packageSizer, 0, wxEXPAND | wxBOTTOM, 8);
 
-  SavePackageButton = new wxButton(ModMakerPanel, wxID_ANY, Language->ButtonSavePackage, wxDefaultPosition, wxSize(160, 28));
-  ModMakerSizer->Add(SavePackageButton, 0, wxTOP, 8);
+  wxStaticText *packageHint = new wxStaticText(
+    ModMakerPanel,
+    wxID_ANY,
+    "Checked textures above will be included. The package name becomes the description shown by TexMod.");
+  packageHint->SetForegroundColour(wxColour(90, 90, 90));
+  builderSizer->Add(packageHint, 0, wxEXPAND | wxBOTTOM, 8);
+
+  SavePackageButton = new wxButton(ModMakerPanel, wxID_ANY, Language->ButtonSavePackage, wxDefaultPosition, wxSize(180, 30));
+  builderSizer->Add(SavePackageButton, 0, wxALIGN_LEFT, 0);
+  ModMakerSizer->Add(builderSizer, 0, wxEXPAND, 0);
 
   ResetInfoText = new wxStaticText(ResetPanel, wxID_ANY, Language->ResetSettingsInfo);
   ResetSizer->Add(ResetInfoText, 0, wxBOTTOM, 10);
@@ -223,6 +275,11 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonLocateExe, this, LocateExeButton->GetId());
   Bind( wxEVT_COMMAND_CHECKBOX_CLICKED, &uMod_GamePage::OnToggleLoadDefaultMods, this, LoadDefaultMods->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSavePackage, this, SavePackageButton->GetId());
+  Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonRefreshTextures, this, RefreshTexturesButton->GetId());
+  Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonOpenSaveFolder, this, OpenSaveFolderButton->GetId());
+  Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonSelectAllTextures, this, SelectAllTexturesButton->GetId());
+  Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonClearTextureSelection, this, ClearTextureSelectionButton->GetId());
+  Bind( wxEVT_COMMAND_CHECKLISTBOX_TOGGLED, &uMod_GamePage::OnSavedTexturesToggle, this, SavedTexturesList->GetId());
   Bind( wxEVT_COMMAND_BUTTON_CLICKED, &uMod_GamePage::OnButtonResetSettings, this, ResetSettingsButton->GetId());
   UpdateLaunchState();
   LoadDefaultModsList();
@@ -603,6 +660,7 @@ void uMod_GamePage::RefreshSavedTextures(void)
     SavedTexturesList->Append(Language->SavedTexturesEmpty);
   }
 
+  UpdateSavedTexturesSummary();
   UpdateSavedTexturesListSize();
 }
 
@@ -613,7 +671,10 @@ void uMod_GamePage::UpdateSavedTexturesListSize(void)
   if (item_count <= 0) item_count = 1;
 
   int row_height = SavedTexturesList->GetCharHeight() + 6;
-  int total_height = (row_height * item_count) + 6;
+  int visible_rows = item_count;
+  if (visible_rows < 3) visible_rows = 3;
+  if (visible_rows > 10) visible_rows = 10;
+  int total_height = (row_height * visible_rows) + 8;
   SavedTexturesList->SetMinSize(wxSize(-1, total_height));
   SavedTexturesList->SetMaxSize(wxSize(-1, total_height));
   if (ModMakerPanel!=NULL && ModMakerSizer!=NULL)
@@ -1038,7 +1099,8 @@ void uMod_GamePage::OnButtonSavePackage(wxCommandEvent& WXUNUSED(event))
   author.Trim(false);
 
   wxString default_name = package_name;
-  if (default_name.IsEmpty()) default_name = "texture_pack";
+  if (default_name.IsEmpty()) default_name = SuggestPackageNameFromContext(save_path, ExeName);
+  if (PackageName != NULL && package_name.IsEmpty()) PackageName->SetValue(default_name);
 
   wxFileDialog save_dialog(this, Language->SavePackageDialog, save_path, default_name, "tpf files (*.tpf)|*.tpf", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
   if (save_dialog.ShowModal() != wxID_OK) return;
@@ -1051,6 +1113,65 @@ void uMod_GamePage::OnButtonSavePackage(wxCommandEvent& WXUNUSED(event))
     wxMessageBox(LastError, "ERROR", wxOK|wxICON_ERROR);
     LastError.Empty();
   }
+  else
+  {
+    wxString message = "Texture package created:\n";
+    message << output_path;
+    wxMessageBox(message, "uMod_Reforged", wxOK|wxICON_INFORMATION);
+  }
+}
+
+void uMod_GamePage::UpdateSavedTexturesSummary(void)
+{
+  if (SavedTexturesSummaryText==NULL || SavedTexturesList==NULL) return;
+
+  unsigned int total = SavedTextureFiles.GetCount();
+  unsigned int selected = 0;
+  unsigned int count = SavedTexturesList->GetCount();
+  for (unsigned int i=0; i<count && i<SavedTextureFiles.GetCount(); i++)
+  {
+    if (SavedTexturesList->IsChecked(i)) selected++;
+  }
+
+  if (total==0) SavedTexturesSummaryText->SetLabel("");
+  else
+  {
+    wxString text;
+    text.Printf("Selected %u of %u textures", selected, total);
+    SavedTexturesSummaryText->SetLabel(text);
+  }
+}
+
+void uMod_GamePage::OnButtonRefreshTextures(wxCommandEvent& WXUNUSED(event))
+{
+  RefreshSavedTextures();
+}
+
+void uMod_GamePage::OnButtonOpenSaveFolder(wxCommandEvent& WXUNUSED(event))
+{
+  wxString save_path = Game.GetSavePath();
+  if (!save_path.IsEmpty()) wxLaunchDefaultApplication(save_path);
+}
+
+void uMod_GamePage::OnButtonSelectAllTextures(wxCommandEvent& WXUNUSED(event))
+{
+  if (SavedTexturesList==NULL) return;
+  unsigned int count = SavedTextureFiles.GetCount();
+  for (unsigned int i=0; i<count; i++) SavedTexturesList->Check(i, true);
+  UpdateSavedTexturesSummary();
+}
+
+void uMod_GamePage::OnButtonClearTextureSelection(wxCommandEvent& WXUNUSED(event))
+{
+  if (SavedTexturesList==NULL) return;
+  unsigned int count = SavedTextureFiles.GetCount();
+  for (unsigned int i=0; i<count; i++) SavedTexturesList->Check(i, false);
+  UpdateSavedTexturesSummary();
+}
+
+void uMod_GamePage::OnSavedTexturesToggle(wxCommandEvent& WXUNUSED(event))
+{
+  UpdateSavedTexturesSummary();
 }
 
 

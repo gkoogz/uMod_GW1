@@ -76,9 +76,15 @@ private:
   int AddTextureInternal(const wxString &file_name, bool update_game);
   void RefreshSavedTextures(void);
   void UpdateSavedTexturesListSize(void);
+  void UpdateSavedTexturesSummary(void);
   bool ExtractTextureHash(const wxString &file_name, unsigned long &hash) const;
   int CreateTpfPackage(const wxString &output_path, const wxArrayString &files, const wxString &name, const wxString &author);
   void OnButtonSavePackage(wxCommandEvent& WXUNUSED(event));
+  void OnButtonRefreshTextures(wxCommandEvent& WXUNUSED(event));
+  void OnButtonOpenSaveFolder(wxCommandEvent& WXUNUSED(event));
+  void OnButtonSelectAllTextures(wxCommandEvent& WXUNUSED(event));
+  void OnButtonClearTextureSelection(wxCommandEvent& WXUNUSED(event));
+  void OnSavedTexturesToggle(wxCommandEvent& WXUNUSED(event));
 
   int GetSettings(void);
   int SetColour( wxTextCtrl** txt, int *colour);
@@ -125,6 +131,11 @@ private:
   wxCheckBox *SaveSingleTexture;
   wxTextCtrl *SavePath;
   wxCheckListBox *SavedTexturesList;
+  wxStaticText *SavedTexturesSummaryText;
+  wxButton *RefreshTexturesButton;
+  wxButton *OpenSaveFolderButton;
+  wxButton *SelectAllTexturesButton;
+  wxButton *ClearTextureSelectionButton;
   wxStaticText *PackageNameLabel;
   wxStaticText *PackageAuthorLabel;
   wxTextCtrl *PackageName;
