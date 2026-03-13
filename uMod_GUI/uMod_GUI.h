@@ -35,6 +35,7 @@ public:
   int LaunchGame(const wxString &game_path, const wxString &command_line);
   int ResetReforgedState(void);
   bool IsGameActive(void) const;
+  LONG GetInjectionGeneration(void) const;
 
 
   void OnAddGame( wxCommandEvent &event);

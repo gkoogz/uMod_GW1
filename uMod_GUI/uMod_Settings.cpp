@@ -19,15 +19,90 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 
 
 #include "uMod_Main.h"
+#include <wx/display.h>
 #include <wx/filename.h>
 
+namespace {
+const int kDefaultWidth = 500;
+const int kDefaultHeight = 400;
+const int kDefaultPosX = 400;
+const int kDefaultPosY = 400;
+const int kMinWidth = 200;
+const int kMinHeight = 200;
+
+static void ResetWindowSettings(uMod_Settings &settings)
+{
+  settings.XSize = kDefaultWidth;
+  settings.YSize = kDefaultHeight;
+  settings.XPos = kDefaultPosX;
+  settings.YPos = kDefaultPosY;
+}
+
+static void ClampWindowSettingsToDisplay(uMod_Settings &settings)
+{
+  if (settings.XSize < kMinWidth) settings.XSize = kMinWidth;
+  if (settings.YSize < kMinHeight) settings.YSize = kMinHeight;
+  if (settings.XSize > 4000) settings.XSize = 4000;
+  if (settings.YSize > 4000) settings.YSize = 4000;
+  if (settings.XPos < -32000) settings.XPos = -32000;
+  if (settings.YPos < -32000) settings.YPos = -32000;
+  if (settings.XPos > 32000) settings.XPos = 32000;
+  if (settings.YPos > 32000) settings.YPos = 32000;
+
+  int display_count = wxDisplay::GetCount();
+  if (display_count <= 0) return;
+
+  wxRect frame_rect(settings.XPos, settings.YPos, settings.XSize, settings.YSize);
+  int best_display = wxNOT_FOUND;
+  int best_area = -1;
+  for (int i = 0; i < display_count; ++i)
+  {
+    wxDisplay display(i);
+    if (!display.IsOk()) continue;
+    wxRect geometry = display.GetClientArea();
+    wxRect intersection = geometry.Intersect(frame_rect);
+    int area = intersection.GetWidth() * intersection.GetHeight();
+    if (area > best_area)
+    {
+      best_area = area;
+      best_display = i;
+    }
+  }
+
+  if (best_display == wxNOT_FOUND) best_display = 0;
+  wxDisplay display(best_display);
+  if (!display.IsOk()) return;
+
+  wxRect geometry = display.GetClientArea();
+  bool suspicious_restore = (best_area <= 0);
+  suspicious_restore = suspicious_restore || (settings.XSize >= (geometry.GetWidth() * 9) / 10);
+  suspicious_restore = suspicious_restore || (settings.YSize >= (geometry.GetHeight() * 9) / 10);
+
+  if (suspicious_restore)
+  {
+    settings.XSize = kDefaultWidth;
+    settings.YSize = kDefaultHeight;
+    settings.XPos = geometry.GetX() + ((geometry.GetWidth() - settings.XSize) / 2);
+    settings.YPos = geometry.GetY() + ((geometry.GetHeight() - settings.YSize) / 3);
+  }
+
+  if (settings.XSize > geometry.GetWidth()) settings.XSize = geometry.GetWidth();
+  if (settings.YSize > geometry.GetHeight()) settings.YSize = geometry.GetHeight();
+  if (settings.XSize < kMinWidth) settings.XSize = kMinWidth;
+  if (settings.YSize < kMinHeight) settings.YSize = kMinHeight;
+
+  int max_x = geometry.GetRight() - settings.XSize + 1;
+  int max_y = geometry.GetBottom() - settings.YSize + 1;
+  if (settings.XPos < geometry.GetX()) settings.XPos = geometry.GetX();
+  if (settings.YPos < geometry.GetY()) settings.YPos = geometry.GetY();
+  if (settings.XPos > max_x) settings.XPos = max_x;
+  if (settings.YPos > max_y) settings.YPos = max_y;
+}
+}
 
 uMod_Settings::uMod_Settings(void)
 {
-  XSize = 500;
-  YSize = 400;
-  XPos = 400;
-  YPos = 400;
+  ResetWindowSettings(*this);
   Language = "English";
 }
 
@@ -50,10 +125,7 @@ int uMod_Settings::Load(void)
 {
   wxFile file;
   auto reset_defaults = [this]() {
-    XSize = 500;
-    YSize = 400;
-    XPos = 400;
-    YPos = 400;
+    ResetWindowSettings(*this);
     Language = "English";
   };
 
@@ -161,19 +233,14 @@ int uMod_Settings::Load(void)
   }
 
   if (Language.IsEmpty()) Language = "English";
-  if (XSize < 200) XSize = 200;
-  if (YSize < 200) YSize = 200;
-  if (XSize > 4000) XSize = 4000;
-  if (YSize > 4000) YSize = 4000;
-  if (XPos < -1) XPos = -1;
-  if (YPos < -1) YPos = -1;
-  if (XPos > 10000) XPos = 10000;
-  if (YPos > 10000) YPos = 10000;
+  ClampWindowSettingsToDisplay(*this);
   return 0;
 }
 
 int uMod_Settings::Save(void)
 {
+  ClampWindowSettingsToDisplay(*this);
+
   wxString settings_path = GetSettingsPath();
   wxString temp_path = settings_path + ".tmp";
   wxFile file;

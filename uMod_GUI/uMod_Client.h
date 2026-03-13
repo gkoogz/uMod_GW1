@@ -34,6 +34,7 @@ public:
   virtual ~uMod_Client(void);
 
   void* Entry(void);
+  void PrepareForShutdown(void);
 
 
   PipeStruct Pipe;
