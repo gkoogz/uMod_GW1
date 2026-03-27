@@ -84,18 +84,10 @@ void* uMod_Client::Entry(void)
   CloseHandle(Pipe.Out);
   Pipe.Out = INVALID_HANDLE_VALUE;
 
-  if (MainFrame != NULL)
-  {
-    uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
-    event.SetClient(this);
-    wxPostEvent( MainFrame, event);
-  }
+  uMod_Event event( uMod_EVENT_TYPE, ID_Delete_Game);
+  event.SetClient(this);
+  wxPostEvent( MainFrame, event);
 
   return NULL;
-}
-
-void uMod_Client::PrepareForShutdown(void)
-{
-  MainFrame = NULL;
 }
 

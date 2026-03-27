@@ -23,99 +23,41 @@ along with Universal Modding Engine.  If not, see <http://www.gnu.org/licenses/>
 #include "uMod_Main.h"
 #include <wx/display.h>
 #include <algorithm>
-#include <vector>
 #include <tlhelp32.h>
 
 namespace {
-struct LaunchMonitorInfo
+struct RelaunchInfo
 {
   wxString exe_path;
   wxString command_line;
   wxString dll_path;
   HANDLE process;
-  DWORD process_id;
-  ULONGLONG launch_time;
-  LONG injection_generation;
 };
-
-volatile LONG g_InjectionGeneration = 0;
-volatile LONG g_ShutdownRequested = 0;
 
 static void EnsureFrameVisible(wxFrame *frame)
 {
   if (frame == NULL) return;
-
-  if (frame->IsFullScreen()) frame->ShowFullScreen(false);
-  if (frame->IsMaximized()) frame->Maximize(false);
-  if (frame->IsIconized()) frame->Iconize(false);
-
-  const int fallback_size = 500;
-  const int fallback_offset_x = 300;
-  const int fallback_offset_y = 300;
-
-  int display_count = wxDisplay::GetCount();
-  if (display_count <= 0)
-  {
-    frame->SetSize(fallback_offset_x, fallback_offset_y, fallback_size, fallback_size);
-    return;
-  }
-
   wxRect frame_rect = frame->GetRect();
-  int best_display = 0;
-  int best_area = -1;
+  int display_count = wxDisplay::GetCount();
   for (int i = 0; i < display_count; ++i)
   {
     wxDisplay display(i);
     if (!display.IsOk()) continue;
-    wxRect geometry = display.GetClientArea();
-    wxRect intersection = geometry.Intersect(frame_rect);
-    int area = intersection.GetWidth() * intersection.GetHeight();
-    if (area > best_area)
+    if (display.GetGeometry().Intersects(frame_rect)) return;
+  }
+
+  if (display_count > 0)
+  {
+    wxDisplay display(0);
+    if (display.IsOk())
     {
-      best_area = area;
-      best_display = i;
+      wxRect geometry = display.GetGeometry();
+      int width = std::min(frame_rect.GetWidth(), geometry.GetWidth());
+      int height = std::min(frame_rect.GetHeight(), geometry.GetHeight());
+      frame->SetSize(width, height);
     }
   }
-
-  wxDisplay display(best_display);
-  if (!display.IsOk())
-  {
-    frame->SetSize(fallback_offset_x, fallback_offset_y, fallback_size, fallback_size);
-    return;
-  }
-
-  wxRect geometry = display.GetClientArea();
-  int width = frame_rect.GetWidth();
-  int height = frame_rect.GetHeight();
-  int x = frame_rect.GetX();
-  int y = frame_rect.GetY();
-
-  bool suspicious_restore = (best_area <= 0);
-  suspicious_restore = suspicious_restore || (width >= geometry.GetWidth() - 8);
-  suspicious_restore = suspicious_restore || (height >= geometry.GetHeight() - 8);
-  suspicious_restore = suspicious_restore || (width < 200 || height < 200);
-
-  if (suspicious_restore)
-  {
-    width = fallback_size;
-    height = fallback_size;
-    x = geometry.GetX() + fallback_offset_x;
-    y = geometry.GetY() + fallback_offset_y;
-  }
-
-  if (width > geometry.GetWidth()) width = geometry.GetWidth();
-  if (height > geometry.GetHeight()) height = geometry.GetHeight();
-  if (width < 200) width = 200;
-  if (height < 200) height = 200;
-
-  int max_x = geometry.GetRight() - width + 1;
-  int max_y = geometry.GetBottom() - height + 1;
-  if (x < geometry.GetX()) x = geometry.GetX();
-  if (y < geometry.GetY()) y = geometry.GetY();
-  if (x > max_x) x = max_x;
-  if (y > max_y) y = max_y;
-
-  frame->SetSize(x, y, width, height);
+  frame->Centre();
 }
 
 static wxString GetInjectedGamesPath(void)
@@ -186,67 +128,7 @@ static bool TerminateProcessesByName(const wchar_t *process_name)
   return terminated;
 }
 
-static wxString NormalizeProcessPath(const wxString &path)
-{
-  wxFileName file_name(path);
-  file_name.Normalize(wxPATH_NORM_DOTS | wxPATH_NORM_ABSOLUTE);
-  return file_name.GetFullPath().Lower();
-}
-
-static ULONGLONG GetCurrentFileTimeValue(void)
-{
-  FILETIME now;
-  GetSystemTimeAsFileTime(&now);
-  ULARGE_INTEGER value;
-  value.LowPart = now.dwLowDateTime;
-  value.HighPart = now.dwHighDateTime;
-  return value.QuadPart;
-}
-
-static bool GetProcessCreationTimeValue(HANDLE process, ULONGLONG &value)
-{
-  FILETIME create_time;
-  FILETIME exit_time;
-  FILETIME kernel_time;
-  FILETIME user_time;
-  if (!GetProcessTimes(process, &create_time, &exit_time, &kernel_time, &user_time)) return false;
-
-  ULARGE_INTEGER create_value;
-  create_value.LowPart = create_time.dwLowDateTime;
-  create_value.HighPart = create_time.dwHighDateTime;
-  value = create_value.QuadPart;
-  return true;
-}
-
-static bool GetProcessImagePath(DWORD process_id, wxString &path)
-{
-  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, process_id);
-  if (snapshot == INVALID_HANDLE_VALUE) return false;
-
-  MODULEENTRY32W module = {0};
-  module.dwSize = sizeof(MODULEENTRY32W);
-  bool ok = Module32FirstW(snapshot, &module) != FALSE;
-  if (ok) path = module.szExePath;
-  CloseHandle(snapshot);
-  if (!ok) return false;
-  return true;
-}
-
-static HANDLE OpenProcessForInjection(DWORD process_id)
-{
-  return OpenProcess(PROCESS_QUERY_INFORMATION |
-                     PROCESS_CREATE_THREAD | PROCESS_VM_OPERATION |
-                     PROCESS_VM_WRITE | PROCESS_VM_READ,
-                     FALSE, process_id);
-}
-
-static bool WasPidAttempted(const std::vector<DWORD> &attempted_pids, DWORD pid)
-{
-  return std::find(attempted_pids.begin(), attempted_pids.end(), pid) != attempted_pids.end();
-}
-
-static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line,
-                                   const wxString &dll_path, HANDLE &process, DWORD &process_id)
+static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line, const wxString &dll_path, HANDLE &process)
 {
   STARTUPINFOW si = {0};
   si.cb = sizeof(STARTUPINFO);
@@ -266,115 +148,27 @@ static bool StartProcessWithInject(const wxString &game_path, const wxString &co
   ResumeThread(pi.hThread);
   CloseHandle(pi.hThread);
   process = pi.hProcess;
-  process_id = pi.dwProcessId;
   return true;
 }
 
-static bool StartProcessWithInject(const wxString &game_path, const wxString &command_line,
-                                   const wxString &dll_path, HANDLE &process)
+static DWORD WINAPI RelaunchIfNeeded(LPVOID data)
 {
-  DWORD process_id = 0;
-  return StartProcessWithInject(game_path, command_line, dll_path, process, process_id);
-}
-
-static bool TryInjectReplacementProcess(const wxString &target_path, const wxString &dll_path,
-                                        ULONGLONG launch_time, std::vector<DWORD> &attempted_pids)
-{
-  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-  if (snapshot == INVALID_HANDLE_VALUE) return false;
-
-  PROCESSENTRY32W entry = {0};
-  entry.dwSize = sizeof(PROCESSENTRY32W);
-  bool injected = false;
-
-  if (Process32FirstW(snapshot, &entry))
-  {
-    do
-    {
-      DWORD pid = entry.th32ProcessID;
-      if (pid == 0 || WasPidAttempted(attempted_pids, pid)) continue;
-
-      HANDLE process = OpenProcessForInjection(pid);
-      if (process == NULL) continue;
-
-      ULONGLONG process_create_time = 0;
-      wxString process_path;
-      bool candidate = GetProcessCreationTimeValue(process, process_create_time) &&
-                       process_create_time + 5000000ULL >= launch_time &&
-                       GetProcessImagePath(pid, process_path) &&
-                       NormalizeProcessPath(process_path) == target_path;
-
-      if (candidate)
-      {
-        Inject(process, dll_path.wc_str(), "Nothing");
-        attempted_pids.push_back(pid);
-        injected = true;
-        CloseHandle(process);
-        break;
-      }
-
-      CloseHandle(process);
-    }
-    while (Process32NextW(snapshot, &entry));
-  }
-
-  CloseHandle(snapshot);
-  return injected;
-}
-
-static DWORD WINAPI MonitorLaunchSession(LPVOID data)
-{
-  LaunchMonitorInfo *info = reinterpret_cast<LaunchMonitorInfo*>(data);
+  RelaunchInfo *info = reinterpret_cast<RelaunchInfo*>(data);
   if (info == NULL) return 0;
 
-  std::vector<DWORD> attempted_pids;
-  attempted_pids.push_back(info->process_id);
+  DWORD wait = WaitForSingleObject(info->process, 3000);
+  CloseHandle(info->process);
+  info->process = INVALID_HANDLE_VALUE;
 
-  HANDLE current_process = info->process;
-  bool launched_retry = false;
-  DWORD start_tick = GetTickCount();
-  DWORD last_inject_tick = start_tick;
-  wxString normalized_target = NormalizeProcessPath(info->exe_path);
-
-  while ((DWORD)(GetTickCount() - start_tick) < 120000UL)
+  if (wait == WAIT_OBJECT_0)
   {
-    if (InterlockedCompareExchange(&g_ShutdownRequested, 0, 0) != 0) break;
-    if (InterlockedCompareExchange(&g_InjectionGeneration, 0, 0) != info->injection_generation) break;
-
-    if (current_process != INVALID_HANDLE_VALUE)
+    HANDLE proc = INVALID_HANDLE_VALUE;
+    if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, proc))
     {
-      DWORD wait = WaitForSingleObject(current_process, 0);
-      if (wait == WAIT_OBJECT_0)
-      {
-        CloseHandle(current_process);
-        current_process = INVALID_HANDLE_VALUE;
-      }
+      if (proc != INVALID_HANDLE_VALUE) CloseHandle(proc);
     }
-
-    if (TryInjectReplacementProcess(normalized_target, info->dll_path, info->launch_time, attempted_pids))
-    {
-      last_inject_tick = GetTickCount();
-    }
-
-    if (!launched_retry && current_process == INVALID_HANDLE_VALUE &&
-        InterlockedCompareExchange(&g_InjectionGeneration, 0, 0) == info->injection_generation &&
-        (DWORD)(GetTickCount() - last_inject_tick) >= 15000UL)
-    {
-      DWORD retry_pid = 0;
-      HANDLE retry_process = INVALID_HANDLE_VALUE;
-      if (StartProcessWithInject(info->exe_path, info->command_line, info->dll_path, retry_process, retry_pid))
-      {
-        current_process = retry_process;
-        attempted_pids.push_back(retry_pid);
-        launched_retry = true;
-        last_inject_tick = GetTickCount();
-      }
-    }
-
-    Sleep(1000);
   }
 
-  if (current_process != INVALID_HANDLE_VALUE) CloseHandle(current_process);
   delete info;
   return 0;
 }
@@ -430,8 +224,6 @@ bool MyApp::OnInit(void)
 uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
        : wxFrame((wxFrame *)NULL, -1, title, wxPoint(set.XPos,set.YPos), wxSize(set.XSize,set.YSize)), Settings(set)
 {
-  InterlockedExchange(&g_InjectionGeneration, 0);
-  InterlockedExchange(&g_ShutdownRequested, 0);
   SetIcon(wxICON(MAINICON));
 
   Server = new uMod_Server( this);
@@ -457,8 +249,8 @@ uMod_Frame::uMod_Frame(const wxString& title, uMod_Settings &set)
   }
   GamePage->LoadLauncherSettings();
 
-  Show( true );
   EnsureFrameVisible(this);
+  Show( true );
 
   {
     HMODULE dll = LoadLibraryW( L"D3DX9_43.dll");
@@ -485,22 +277,14 @@ uMod_Frame::~uMod_Frame(void)
   if (Clients!=NULL) delete [] Clients;
 
   Settings.Language = Language->GetCurrentLanguage();
-  if (!IsMaximized() && !IsIconized() && !IsFullScreen())
-  {
-    GetSize( &Settings.XSize, &Settings.YSize);
-    GetPosition( &Settings.XPos, &Settings.YPos);
-  }
+  GetSize( &Settings.XSize, &Settings.YSize);
+  GetPosition( &Settings.XPos, &Settings.YPos);
   Settings.Save();
 }
 
 bool uMod_Frame::IsGameActive(void) const
 {
   return ActivePipe.Out != INVALID_HANDLE_VALUE;
-}
-
-LONG uMod_Frame::GetInjectionGeneration(void) const
-{
-  return InterlockedCompareExchange(&g_InjectionGeneration, 0, 0);
 }
 
 int uMod_Frame::KillServer(void)
@@ -535,7 +319,6 @@ int uMod_Frame::KillServer(void)
 
 void uMod_Frame::OnAddGame( wxCommandEvent &event)
 {
-  InterlockedIncrement(&g_InjectionGeneration);
   if (NumberOfGames>=MaxNumberOfGames)
   {
     if (GetMoreMemory( Clients, MaxNumberOfGames, MaxNumberOfGames+10))
@@ -600,13 +383,11 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
   {
     if (wxMessageBox(Language->ExitGameAnyway, "ERROR", wxYES_NO|wxICON_ERROR)!=wxYES) {event.Veto(); return;}
   }
-  InterlockedExchange(&g_ShutdownRequested, 1);
   if (Clients!=NULL)
   {
     for (int i=0; i<NumberOfGames; i++)
     {
       if (Clients[i]==NULL) continue;
-      Clients[i]->PrepareForShutdown();
       if (Clients[i]->Pipe.In != INVALID_HANDLE_VALUE)
       {
         CloseHandle(Clients[i]->Pipe.In);
@@ -617,8 +398,7 @@ void uMod_Frame::OnClose(wxCloseEvent& event)
         CloseHandle(Clients[i]->Pipe.Out);
         Clients[i]->Pipe.Out = INVALID_HANDLE_VALUE;
       }
-      Clients[i]->Wait();
-      delete Clients[i];
+      Clients[i]->Delete();
       Clients[i] = NULL;
     }
     NumberOfGames = 0;
@@ -718,22 +498,18 @@ int uMod_Frame::LaunchGame(const wxString &game_path, const wxString &command_li
   }
 
   HANDLE process = INVALID_HANDLE_VALUE;
-  DWORD process_id = 0;
-  if (!StartProcessWithInject(game_path, command_line, dll, process, process_id))
+  if (!StartProcessWithInject(game_path, command_line, dll, process))
   {
     wxMessageBox( Language->Error_ProcessNotStarted, "ERROR",  wxOK|wxICON_ERROR);
     return -1;
   }
 
-  LaunchMonitorInfo *info = new LaunchMonitorInfo;
+  RelaunchInfo *info = new RelaunchInfo;
   info->exe_path = game_path;
   info->command_line = command_line;
   info->dll_path = dll;
   info->process = process;
-  info->process_id = process_id;
-  info->launch_time = GetCurrentFileTimeValue();
-  info->injection_generation = GetInjectionGeneration();
-  HANDLE thread = CreateThread(NULL, 0, MonitorLaunchSession, info, 0, NULL);
+  HANDLE thread = CreateThread(NULL, 0, RelaunchIfNeeded, info, 0, NULL);
   if (thread != NULL) CloseHandle(thread);
   else
   {

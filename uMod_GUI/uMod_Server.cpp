@@ -37,7 +37,7 @@ void* uMod_Server::Entry(void)
   bool  fConnected = false;
   HANDLE pipe_in;
   HANDLE pipe_out;
-  char buffer[SMALL_BUFSIZE + sizeof(wchar_t)];
+  char buffer[SMALL_BUFSIZE];
   wxString abort = ABORT_SERVER;
 
   while(1)
@@ -92,10 +92,10 @@ void* uMod_Server::Entry(void)
 
       if (fSuccess)
       {
-        if (num >= sizeof(wchar_t) && num <= SMALL_BUFSIZE)
+        if (num>2)
         {
           buffer[num]=0;
-          buffer[num+1]=0;
+          buffer[num-1]=0;
           wxString name = (wchar_t*) buffer;
 
           if (name==abort) // kill this server thread
