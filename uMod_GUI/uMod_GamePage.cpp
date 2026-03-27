@@ -152,22 +152,30 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   savePathRow->Add( (wxWindow*) SavePath, 1, wxEXPAND, 0);
   captureSizer->Add( savePathRow, 0, wxEXPAND | wxBOTTOM, 10);
 
+  wxStaticBoxSizer *keybindSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, "Keybinds");
   wxFlexGridSizer *keyGrid = new wxFlexGridSizer(3, 2, 8, 10);
   keyGrid->AddGrowableCol(1, 1);
-  KeyBackButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyBack, wxDefaultPosition, wxSize(180, 28));
+  KeyBackButton = new wxButton(ModMakerPanel, wxID_ANY, "Previous texture", wxDefaultPosition, wxSize(180, 28));
   ChoiceKeyBack = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
   keyGrid->Add( (wxWindow*) KeyBackButton, 0, wxALIGN_CENTER_VERTICAL, 0);
   keyGrid->Add( (wxWindow*) ChoiceKeyBack, 1, wxEXPAND, 0);
-  KeySaveButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeySave, wxDefaultPosition, wxSize(180, 28));
-  ChoiceKeySave = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
-  keyGrid->Add( (wxWindow*) KeySaveButton, 0, wxALIGN_CENTER_VERTICAL, 0);
-  keyGrid->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
-  KeyNextButton = new wxButton(ModMakerPanel, wxID_ANY, Language->KeyNext, wxDefaultPosition, wxSize(180, 28));
+  KeyNextButton = new wxButton(ModMakerPanel, wxID_ANY, "Next texture", wxDefaultPosition, wxSize(180, 28));
   ChoiceKeyNext = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
   keyGrid->Add( (wxWindow*) KeyNextButton, 0, wxALIGN_CENTER_VERTICAL, 0);
   keyGrid->Add( (wxWindow*) ChoiceKeyNext, 1, wxEXPAND, 0);
-  captureSizer->Add( keyGrid, 0, wxEXPAND | wxBOTTOM, 10);
+  KeySaveButton = new wxButton(ModMakerPanel, wxID_ANY, "Save", wxDefaultPosition, wxSize(180, 28));
+  ChoiceKeySave = new wxChoice( ModMakerPanel, wxID_ANY, wxDefaultPosition, wxDefaultSize, Language->KeyStrings);
+  keyGrid->Add( (wxWindow*) KeySaveButton, 0, wxALIGN_CENTER_VERTICAL, 0);
+  keyGrid->Add( (wxWindow*) ChoiceKeySave, 1, wxEXPAND, 0);
+  keybindSizer->Add( keyGrid, 0, wxEXPAND, 0);
+  captureSizer->Add( keybindSizer, 0, wxEXPAND | wxBOTTOM, 10);
 
+  wxStaticText *fontColorInfo = new wxStaticText(
+    ModMakerPanel,
+    wxID_ANY,
+    "Changes the in-game metadata text rendered by the capture tool.");
+  fontColorInfo->SetForegroundColour(wxColour(90, 90, 90));
+  captureSizer->Add( fontColorInfo, 0, wxBOTTOM, 4);
   FontColourSizer = new wxBoxSizer(wxHORIZONTAL);
   FontColour[0] = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->FontColour, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   FontColour[1] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "255", wxDefaultPosition, wxDefaultSize);
@@ -175,6 +183,11 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   FontColour[3] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize);
   for (int i=0; i<4; i++) FontColourSizer->Add( (wxWindow*) FontColour[i], 1, wxEXPAND, i==0 ? 0 : 0);
 
+  wxStaticText *textureColorInfo = new wxStaticText(
+    ModMakerPanel,
+    wxID_ANY,
+    "Changes the highlight color of the currently selected texture.");
+  textureColorInfo->SetForegroundColour(wxColour(90, 90, 90));
   TextureColourSizer = new wxBoxSizer(wxHORIZONTAL);
   TextureColour[0] = new wxTextCtrl(ModMakerPanel, wxID_ANY, Language->TextureColour, wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
   TextureColour[1] = new wxTextCtrl(ModMakerPanel, wxID_ANY, "0", wxDefaultPosition, wxDefaultSize);
@@ -183,6 +196,7 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   for (int i=0; i<4; i++) TextureColourSizer->Add( (wxWindow*) TextureColour[i], 1, wxEXPAND, i==0 ? 0 : 0);
 
   captureSizer->Add( FontColourSizer, 0, wxEXPAND | wxBOTTOM, 6);
+  captureSizer->Add( textureColorInfo, 0, wxBOTTOM, 4);
   captureSizer->Add( TextureColourSizer, 0, wxEXPAND | wxBOTTOM, 10);
 
   SaveSingleTexture = new wxCheckBox( ModMakerPanel, -1, Language->CheckBoxSaveSingleTexture);
@@ -196,6 +210,12 @@ uMod_GamePage::uMod_GamePage( wxWindow *parent, const wxString &exe, const wxStr
   updateRow->Add( (wxWindow*) UpdateButton, 0, wxRIGHT, 10);
   updateRow->Add( (wxWindow*) ReloadButton, 0, 0, 0);
   captureSizer->Add( updateRow, 0, wxALIGN_LEFT, 0);
+  wxStaticText *updateInfo = new wxStaticText(
+    ModMakerPanel,
+    wxID_ANY,
+    "Update sends your current capture settings to the running game. Use Reload if you changed files on disk and want uMod to re-read them.");
+  updateInfo->SetForegroundColour(wxColour(90, 90, 90));
+  captureSizer->Add( updateInfo, 0, wxTOP, 6);
   ModMakerSizer->Add(captureSizer, 0, wxEXPAND | wxBOTTOM, 10);
 
   wxStaticBoxSizer *builderSizer = new wxStaticBoxSizer(wxVERTICAL, ModMakerPanel, "Package Builder");
@@ -1307,9 +1327,9 @@ int uMod_GamePage::UpdateLanguage(void)
     ModsSizer->GetStaticBox()->SetLabel( Language->LoadedMods);
   }
 
-  KeyBackButton->SetLabel( Language->KeyBack);
-  KeySaveButton->SetLabel( Language->KeySave);
-  KeyNextButton->SetLabel( Language->KeyNext);
+  KeyBackButton->SetLabel( "Previous texture");
+  KeySaveButton->SetLabel( "Save");
+  KeyNextButton->SetLabel( "Next texture");
   FontColour[0]->SetValue( Language->FontColour);
   TextureColour[0]->SetValue( Language->TextureColour);
   SaveAllTextures->SetLabel( Language->CheckBoxSaveAllTextures);
