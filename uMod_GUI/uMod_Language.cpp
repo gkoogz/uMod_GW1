@@ -363,8 +363,8 @@ int uMod_Language::LoadDefault(void)
   KeyNext = "Next Texture";
 
 
-  FontColour = "Font colour (RGB):";
-  TextureColour = "Texture colour (RGB):";
+  FontColour = "Font color (RGB):";
+  TextureColour = "Texture color (RGB):";
   return 0;
 }
 
